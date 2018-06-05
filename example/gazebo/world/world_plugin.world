@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <world name="default">
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <plugin name="virtual_element_manager" filename="libvirtual_element_manager.so">
+      <springs>
+        <spring name="">
+          <anchor model="" link="" />
+          <target model="" link="" />
+          <stiffness/>
+        </spring>
+      </springs>
+    </plugin>
+  </world>
+</sdf>
