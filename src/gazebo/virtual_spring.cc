@@ -182,6 +182,12 @@ class VirtualSpring : public ModelPlugin
         math::Pose aLinkWorldPose = this->anchor_link->GetWorldPose();
         math::Pose tLinkWorldPose = this->target_link->GetWorldPose();
 
+        if (aLinkWorldPose.pos == anchor_old && tLinkWorldPose.pos == target_old && aLinkWorldPose == reference_old)
+        {
+            // Skip sending if everything is ok!
+            return;
+        }
+
         // Setup message
         springMsg.mutable_anchor()->set_x(aLinkWorldPose.pos.x);
         springMsg.mutable_anchor()->set_y(aLinkWorldPose.pos.y);
@@ -192,9 +198,13 @@ class VirtualSpring : public ModelPlugin
         springMsg.mutable_target()->set_z(tLinkWorldPose.pos.z);
 
         // TODO plus offset!
-        springMsg.mutable_reference()->set_x(aLinkWorldPose.pos.x);
-        springMsg.mutable_reference()->set_y(aLinkWorldPose.pos.y);
-        springMsg.mutable_reference()->set_z(aLinkWorldPose.pos.z);
+        springMsg.mutable_reference()->mutable_position()->set_x(aLinkWorldPose.pos.x);
+        springMsg.mutable_reference()->mutable_position()->set_y(aLinkWorldPose.pos.y);
+        springMsg.mutable_reference()->mutable_position()->set_z(aLinkWorldPose.pos.z);
+        springMsg.mutable_reference()->mutable_orientation()->set_w(aLinkWorldPose.rot.w);
+        springMsg.mutable_reference()->mutable_orientation()->set_x(aLinkWorldPose.rot.x);
+        springMsg.mutable_reference()->mutable_orientation()->set_y(aLinkWorldPose.rot.y);
+        springMsg.mutable_reference()->mutable_orientation()->set_z(aLinkWorldPose.rot.z);
 
         gazebo::common::Time gz_time = gazebo::physics::get_world()->GetSimTime();
         springMsg.mutable_time()->set_nsec(gz_time.nsec);
@@ -219,6 +229,10 @@ class VirtualSpring : public ModelPlugin
         springMsg.set_active(true);
 
         factoryPub->Publish(springMsg);
+
+        anchor_old = aLinkWorldPose.pos;
+        target_old = tLinkWorldPose.pos;
+        reference_old = aLinkWorldPose;
     }
 
     // Called by the world update start event
@@ -324,6 +338,10 @@ class VirtualSpring : public ModelPlugin
     physics::ModelPtr target_model;
     physics::LinkPtr anchor_link;
     physics::LinkPtr target_link;
+
+    math::Vector3 anchor_old;
+    math::Vector3 target_old;
+    math::Pose reference_old;
 
     transport::NodePtr node;
     transport::PublisherPtr factoryPub;

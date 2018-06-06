@@ -28,6 +28,8 @@ set (msgs
   ${PROTOBUF_IMPORT_DIRS}/vector3d.proto
   # Not sure about the one below...
   #${PROTOBUF_IMPORT_DIRS}/header.proto
+  ${PROTOBUF_IMPORT_DIRS}/pose.proto
+  ${PROTOBUF_IMPORT_DIRS}/quaternion.proto
   ${PROTOBUF_IMPORT_DIRS}/time.proto
 )
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${msgs})
