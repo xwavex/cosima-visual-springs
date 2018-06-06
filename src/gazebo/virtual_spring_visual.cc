@@ -84,8 +84,45 @@ class VirtualSpringVisual : public VisualPlugin
         std::lock_guard<std::mutex> lock(this->mutex);
 
         line->Clear();
-        line->AddPoint(anchor.x, anchor.y, anchor.z, common::Color::White);
+        double dist = anchor.Distance(target);
+
+        double amountOfSegments = 20;
+        math::Vector3 diffVec = anchor - target;
+
+        // beginning point
         line->AddPoint(target.x, target.y, target.z, common::Color::White);
+        // post beginning point
+        // line->AddPoint(target.x + diffVec.x * 0.1, target.y + diffVec.y * 0.1, target.z + diffVec.z * 0.1, common::Color::White);
+        double steps = 1 / amountOfSegments;
+        // middle points
+        for (unsigned int i = 1; i < amountOfSegments; i++)
+        {
+            double stepSize = i * steps;
+            double modZ = 0;
+            double amplitude = 0.05;
+            if (i % 2 == 0)
+            {
+                modZ = -amplitude;
+            }
+            else
+            {
+                modZ = amplitude;
+            }
+            if (i == 1 || i == (amountOfSegments - 1))
+            {
+                modZ = 0;
+            }
+            // std::cout << "stepSize " << stepSize << std::endl;
+            line->AddPoint(target.x + diffVec.x * stepSize, target.y + diffVec.y * stepSize, target.z + diffVec.z * stepSize + modZ, common::Color::White);
+        }
+
+        // line->AddPoint(target.x + diffVec.x, target.y + diffVec.y, target.z + diffVec.z, common::Color::White);
+
+        // pre last point
+        // line->AddPoint(target.x + diffVec.x * 0.9, target.y + diffVec.y * 0.9, target.z + diffVec.z * 0.9, common::Color::White);
+
+        // last point
+        line->AddPoint(anchor.x, anchor.y, anchor.z, common::Color::White);
     }
 
     void OnInfo(const boost::shared_ptr<cosima_gazebo_virtual_spring::msgs::Spring const> &_msg)
