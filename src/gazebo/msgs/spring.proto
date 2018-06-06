@@ -1,0 +1,28 @@
+syntax = "proto2";
+package cosima_gazebo_virtual_spring.msgs;
+
+/// \ingroup cosima_gazebo_virtual_spring
+/// \interface Spring 
+/// \brief Spring message for passing info between two entities (e.g., server and client)
+
+import "vector3d.proto";
+import "time.proto";
+
+message Spring
+{
+    required uint32 id                                = 1;
+    required string name                              = 2;
+
+    required gazebo.msgs.Vector3d anchor              = 3;
+    required gazebo.msgs.Vector3d target              = 4;
+    required gazebo.msgs.Vector3d reference           = 5;
+
+    required gazebo.msgs.Time time                    = 6;
+
+    required gazebo.msgs.Vector3d stiffness           = 7;
+    required gazebo.msgs.Vector3d damping             = 8;
+    optional gazebo.msgs.Vector3d stiffness_orient    = 9;
+    optional gazebo.msgs.Vector3d damping_orient      = 10;
+
+    optional bool active                              = 11 [default = true];
+}

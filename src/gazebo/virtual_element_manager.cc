@@ -140,17 +140,20 @@ public:
             sdf::SDF sphereSDF3;
             sphereSDF3.SetFromString(
                 "<sdf version ='1.4'>\
-                    <model name ='springGhost'>\
+                    <model name ='name_placeholder'>\
                       <static>true</static>\
                       <allow_auto_disable>true</allow_auto_disable>\
                       <pose>0 0 0 0 0 0</pose>\
                       <link name ='link'>\
                         <gravity>false</gravity>\
                         <pose>0 0 0 0 0 0</pose>\
-                        <visual name ='visual'>\
+                        <visual name ='name_placeholder'>\
                           <geometry>\
-                            <box><size>0.5 0.2 0.2</size></box>\
+                            <box><size>0.01 0.01 0.01</size></box>\
                           </geometry>\
+                          <plugin name='virtual_spring_visual' filename='libcosima_gazebo_virtual_spring_visual.so'>\
+                            <topic>blaaa</topic>\
+                         </plugin>\
                         </visual>\
                       </link>\
                       <plugin name='virtual_spring' filename='libcosima_gazebo_virtual_spring.so'>\
@@ -165,7 +168,10 @@ public:
                   </sdf>");
             // Demonstrate using a custom model name.
             sdf::ElementPtr model3 = sphereSDF3.Root()->GetElement("model");
+
+            // TODO take care of unique names!
             model3->GetAttribute("name")->SetFromString("springGhost");
+            model3->GetElement("link")->GetElement("visual")->GetAttribute("name")->SetFromString("springGhost");
             world->InsertModelSDF(sphereSDF3);
 
             std::cout << "inserted spring model with plugin" << std::endl;

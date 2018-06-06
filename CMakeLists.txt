@@ -16,6 +16,25 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
 
 
+find_package(Protobuf REQUIRED)
+set(PROTOBUF_IMPORT_DIRS)
+foreach(ITR ${GAZEBO_INCLUDE_DIRS})
+  if(ITR MATCHES ".*gazebo-[0-9.]+$")
+    set(PROTOBUF_IMPORT_DIRS "${ITR}/gazebo/msgs/proto")
+  endif()
+endforeach()
+set (msgs
+  src/gazebo/msgs/spring.proto
+  ${PROTOBUF_IMPORT_DIRS}/vector3d.proto
+  # Not sure about the one below...
+  #${PROTOBUF_IMPORT_DIRS}/header.proto
+  ${PROTOBUF_IMPORT_DIRS}/time.proto
+)
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${msgs})
+add_library(spring_msgs SHARED ${PROTO_SRCS})
+target_link_libraries(spring_msgs ${PROTOBUF_LIBRARY})
+
+
 find_package(ignition-transport2 QUIET)
 if(IGNITION-TRANSPORT_FOUND OR ignition-transport2_FOUND)
 	message(STATUS "Found IGNITION-TRANSPORT, version: ${IGNITION-TRANSPORT_VERSION}, ${ignition-transport2_VERSION}")
@@ -28,7 +47,7 @@ endif()
 #message(STATUS "IGNITION-TRANSPORT_INCLUDE_DIRS: ${IGNITION-TRANSPORT_INCLUDE_DIRS}")
 #message(STATUS "IGNITION-TRANSPORT_LIBRARY_DIRS: ${IGNITION-TRANSPORT_LIBRARY_DIRS}")
 #message(STATUS "IGNITION-TRANSPORT_LIBRARIES: ${IGNITION-TRANSPORT_LIBRARIES}")
-include_directories(${IGNITION-TRANSPORT_INCLUDE_DIRS})
+include_directories(${IGNITION-TRANSPORT_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 link_directories(${IGNITION-TRANSPORT_LIBRARY_DIRS})
 
 # add_library(trajectory_wp SHARED src/gazebo/trajectory_wp.cc)
@@ -38,7 +57,12 @@ add_library(virtual_element_manager SHARED src/gazebo/virtual_element_manager.cc
 target_link_libraries(virtual_element_manager ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
 
 add_library(cosima_gazebo_virtual_spring SHARED src/gazebo/virtual_spring.cc)
-target_link_libraries(cosima_gazebo_virtual_spring ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+target_link_libraries(cosima_gazebo_virtual_spring spring_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+add_dependencies(cosima_gazebo_virtual_spring spring_msgs)
+
+add_library(cosima_gazebo_virtual_spring_visual SHARED src/gazebo/virtual_spring_visual.cc)
+target_link_libraries(cosima_gazebo_virtual_spring_visual spring_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+add_dependencies(cosima_gazebo_virtual_spring_visual spring_msgs)
 
 # add_library(virtual_spring_visual_sp SHARED src/gazebo/virtual_spring_visual_sp.cc)
 # target_link_libraries(virtual_spring_visual_sp ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
