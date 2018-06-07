@@ -112,11 +112,28 @@ class VirtualSpringVisual : public VisualPlugin
         referenceFrameVis->SetAxisMaterial(1, "Gazebo/Green");
         referenceFrameVis->SetAxisMaterial(2, "Gazebo/Blue");
 
+        this->wireBoxSceneNode = rendering::VisualPtr(new gazebo::rendering::Visual(this->visual_draw->GetName() + "__damper_WIREBOX_NODE__", this->visual_draw));
+        this->wireBoxSceneNode->Load();
+        this->wireBoxSceneNode->SetVisible(true);
+        math::Box bbox = this->visual->GetBoundingBox();
+        bbox.min = bbox.min * 1;
+        bbox.max = bbox.max * 1;
+        wbox = new rendering::WireBox(this->wireBoxSceneNode, bbox);
+        // wbox->SetVisible(false);
+        math::Vector3 pppooosss(0, 3, 1);
+
+        // TODO pose and look at function!
+        this->wireBoxSceneNode->SetPosition(pppooosss);
+
         gzdbg
             << "[VirtualSpringVisual] " << this->visual->GetName() << " subscribed to " << this->infoSub->GetTopic() << std::endl;
     }
 
   private:
+    void drawSpring()
+    {
+    }
+
     void Update()
     {
         if (!this->visual)
@@ -170,7 +187,7 @@ class VirtualSpringVisual : public VisualPlugin
         // last point
         line->AddPoint(anchor.x, anchor.y, anchor.z, common::Color::White);
 
-        math::Vector3 middleVec = target + diffVec * 0.5;
+        math::Vector3 middleVec = target + (anchor - target) * 0.5;
         // set stiffness
         stiffnessText->SetText("Stiff.L.: " + std::to_string(stiffness.x) + ", " + std::to_string(stiffness.y) + ", " + std::to_string(stiffness.z));
         stiffnessTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z);
@@ -317,6 +334,9 @@ class VirtualSpringVisual : public VisualPlugin
     /// \brief Pointer to scene.
     rendering::ScenePtr scene;
 
+    /// \brief Damper visual.
+    rendering::WireBox *wbox;
+
     /// \brief MovableText for stiffness.
     rendering::MovableText *stiffnessText;
     /// \brief SceneNode for stiffness.
@@ -336,6 +356,9 @@ class VirtualSpringVisual : public VisualPlugin
     rendering::MovableText *damping_orientText;
     /// \brief SceneNode for damping_orient.
     Ogre::SceneNode *damping_orientTextSceneNode;
+
+    /// \brief SceneNode for Damper.
+    rendering::VisualPtr wireBoxSceneNode;
 
     /// \brief Linkframe visual for reference frame.
     gazebo::rendering::LinkFrameVisualPtr referenceFrameVis;
