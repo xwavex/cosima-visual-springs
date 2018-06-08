@@ -175,10 +175,10 @@ public:
                         <pose>0 0 0 0 0 0</pose>\
                         <visual name ='name_placeholder'>\
                           <geometry>\
-                            <box><size>0.01 0.01 0.01</size></box>\
+                            <empty/>\
                           </geometry>\
                           <plugin name='virtual_spring_visual' filename='libcosima_gazebo_virtual_spring_visual.so'>\
-                            <topic>blaaa</topic>\
+                            <topic>blaaa?</topic>\
                          </plugin>\
                         </visual>\
                       </link>\
@@ -189,6 +189,8 @@ public:
                           <damping>0 0 0</damping>\
                           <stiffness_orient>0.0 0.0 0.0</stiffness_orient>\
                           <damping_orient>0 0 0</damping_orient>\
+                          <!-- point, direction, constraint_direction -->\
+                          <anchor_type>point</anchor_type>\
                       </plugin>\
                     </model>\
                   </sdf>");
@@ -201,6 +203,81 @@ public:
             world->InsertModelSDF(sphereSDF3);
 
             std::cout << "inserted spring model with plugin" << std::endl;
+
+            // TODO constraint which dynamic links
+            sdf::SDF sphereSDF4;
+            sphereSDF4.SetFromString(
+                "<sdf version ='1.4'>\
+                    <model name ='name_placeholder'>\
+                      <static>true</static>\
+                      <allow_auto_disable>true</allow_auto_disable>\
+                      <pose>0 0 0 0 0 0</pose>\
+                      <link name ='link'>\
+                        <gravity>false</gravity>\
+                        <pose>0 0 0 0 0 0</pose>\
+                        <visual name ='name_placeholder'>\
+                          <geometry>\
+                            <empty/>\
+                          </geometry>\
+                          <plugin name='virtual_constraint_visual' filename='libcosima_gazebo_virtual_constraint_visual.so'>\
+                            <topic>blaaa?</topic>\
+                         </plugin>\
+                        </visual>\
+                      </link>\
+                      <plugin name='virtual_constraint' filename='libcosima_gazebo_virtual_constraint.so'>\
+                          <anchor model='spring0' link='link' />\
+                          <target model='spring1' link='link' />\
+                          <!-- point, direction, constraint_direction -->\
+                          <anchor_type>point</anchor_type>\
+                      </plugin>\
+                    </model>\
+                  </sdf>");
+            // Demonstrate using a custom model name.
+            sdf::ElementPtr model4 = sphereSDF4.Root()->GetElement("model");
+
+            // TODO take care of unique names!
+            model4->GetAttribute("name")->SetFromString("constraintGhost");
+            model4->GetElement("link")->GetElement("visual")->GetAttribute("name")->SetFromString("constraintGhost");
+            world->InsertModelSDF(sphereSDF4);
+
+            // TODO constraint which dynamic links
+            sdf::SDF sphereSDF5;
+            sphereSDF5.SetFromString(
+                "<sdf version ='1.4'>\
+                    <model name ='name_placeholder'>\
+                      <static>true</static>\
+                      <allow_auto_disable>true</allow_auto_disable>\
+                      <pose>0 0 0 0 0 0</pose>\
+                      <link name ='link'>\
+                        <gravity>false</gravity>\
+                        <pose>0 0 0 0 0 0</pose>\
+                        <visual name ='name_placeholder'>\
+                          <geometry>\
+                            <empty/>\
+                          </geometry>\
+                          <plugin name='virtual_constraint_visual' filename='libcosima_gazebo_virtual_constraint_visual.so'>\
+                            <topic>blaaa?</topic>\
+                         </plugin>\
+                        </visual>\
+                      </link>\
+                      <plugin name='virtual_constraint' filename='libcosima_gazebo_virtual_constraint.so'>\
+                          <frame>0 0 1 0 0 0</frame>\
+                          <target model='spring1' link='link' />\
+                          <!-- point, direction, constraint_direction -->\
+                          <anchor_type>point</anchor_type>\
+                      </plugin>\
+                    </model>\
+                  </sdf>");
+            // Demonstrate using a custom model name.
+            sdf::ElementPtr model5 = sphereSDF5.Root()->GetElement("model");
+
+            // TODO take care of unique names!
+            model5->GetAttribute("name")->SetFromString("constraintGhostFixedGlobal");
+            model5->GetElement("link")->GetElement("visual")->GetAttribute("name")->SetFromString("constraintGhostFixedGlobal");
+            world->InsertModelSDF(sphereSDF5);
+
+            std::cout << "inserted constraint model with plugin" << std::endl;
+
             first = false;
           }
         }
