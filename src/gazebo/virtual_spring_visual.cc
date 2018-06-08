@@ -1,3 +1,29 @@
+/* ============================================================
+ *
+ * This file is a part of CoSiMA (CogIMon) project
+ *
+ * Copyright (C) 2018 by Dennis Leroy Wigand <dwigand at cor-lab dot uni-bielefeld dot de>
+ *
+ * This file may be licensed under the terms of the
+ * GNU Lesser General Public License Version 3 (the ``LGPL''),
+ * or (at your option) any later version.
+ *
+ * Software distributed under the License is distributed
+ * on an ``AS IS'' basis, WITHOUT WARRANTY OF ANY KIND, either
+ * express or implied. See the LGPL for the specific language
+ * governing rights and limitations.
+ *
+ * You should have received a copy of the LGPL along with this
+ * program. If not, go to http://www.gnu.org/licenses/lgpl.html
+ * or write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *
+ * The development of this software was supported by:
+ *   CoR-Lab, Research Institute for Cognition and Robotics
+ *     Bielefeld University
+ *
+ * ============================================================ */
+
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
@@ -65,8 +91,13 @@ class VirtualSpringVisual : public VisualPlugin
 
         // Setup rendering components
         line = visual_draw->CreateDynamicLine(gazebo::rendering::RENDERING_LINE_STRIP);
-        line->setMaterial("Gazebo/Turquoise");
+        line->setMaterial("Gazebo/White");
         line->setVisibilityFlags(GZ_VISIBILITY_GUI);
+
+        line_damper = visual_draw->CreateDynamicLine(gazebo::rendering::RENDERING_LINE_STRIP);
+        line_damper->setMaterial("Gazebo/White");
+        line_damper->setVisibilityFlags(GZ_VISIBILITY_GUI);
+        line_damper->setVisible(false);
 
         stiffnessText = new rendering::MovableText();
         stiffnessText->Load(this->visual_draw->GetName() + "__STIFFNESS_TEXT__", "Stiffness", "Arial", 0.03);
@@ -135,31 +166,19 @@ class VirtualSpringVisual : public VisualPlugin
   private:
     void drawSpring()
     {
-    }
-
-    void Update()
-    {
-        if (!this->visual)
+        if (line_damper->isVisible())
         {
-            gzerr << "[VirtualSpringVisual] The visual is null." << std::endl;
-            return;
-        }
-        if (!firstReceived)
-        {
-            return;
-        }
-        if (anchor_old == anchor && target_old == target && reference_old == reference)
-        {
-            // Skip recalculations is nothing is changing!
-            return;
+            line_damper->setVisible(false);
         }
 
-        std::lock_guard<std::mutex> lock(this->mutex);
-
-        line->Clear();
         double dist = anchor.Distance(target);
-
         math::Vector3 diffVec = anchor - target;
+
+        // hide damping parts
+        if (this->wireBoxSceneNode->GetVisible())
+        {
+            this->wireBoxSceneNode->SetVisible(false);
+        }
 
         // beginning point
         line->AddPoint(target.x, target.y, target.z, common::Color::White);
@@ -187,11 +206,29 @@ class VirtualSpringVisual : public VisualPlugin
             line->AddPoint(target.x + diffVec.x * stepSize, target.y + diffVec.y * stepSize, target.z + diffVec.z * stepSize + modZ, common::Color::White);
         }
 
-        // TODO Damper
+        // last point
+        line->AddPoint(anchor.x, anchor.y, anchor.z, common::Color::White);
+    }
+
+    void drawDamper()
+    {
+        if (line_damper->isVisible())
+        {
+            line_damper->setVisible(false);
+        }
+
+        double dist = anchor.Distance(target);
+        math::Vector3 diffVec = anchor - target;
+
+        // beginning point
+        line->AddPoint(target.x, target.y, target.z, common::Color::White);
+
+        // damper
         double xLengthFactor = dist * 0.15;
         bbox.min.x = -xLengthFactor;
         bbox.max.x = xLengthFactor;
         this->wbox->Init(bbox);
+        // show damping parts
         if (!this->wireBoxSceneNode->GetVisible())
         {
             this->wireBoxSceneNode->SetVisible(true);
@@ -207,23 +244,140 @@ class VirtualSpringVisual : public VisualPlugin
 
         // last point
         line->AddPoint(anchor.x, anchor.y, anchor.z, common::Color::White);
+    }
+
+    void drawSpringDamper()
+    {
+        double dist = anchor.Distance(target);
+        math::Vector3 diffVec = anchor - target;
+        double steps = 1 / amountOfSegments;
+        double branchShift = 0.15;
+        // beginning point
+        line->AddPoint(target.x, target.y, target.z, common::Color::White);
+
+        // spring extension point
+        line->AddPoint(target.x + diffVec.x * steps, target.y + diffVec.y * steps, target.z + diffVec.z * steps, common::Color::White);
+
+        // damper extension point
+        line_damper->AddPoint(target.x + diffVec.x * steps, target.y + diffVec.y * steps, target.z + diffVec.z * steps, common::Color::White);
+
+        // spring branch point
+        line->AddPoint(target.x + diffVec.x * steps, target.y + diffVec.y * steps + branchShift, target.z + diffVec.z * steps, common::Color::White);
+
+        // damper branch point
+        line_damper->AddPoint(target.x + diffVec.x * steps, target.y + diffVec.y * steps - branchShift, target.z + diffVec.z * steps, common::Color::White);
+
+        // spring middle points
+        double stepSize = 0;
+        for (unsigned int i = 2; i < amountOfSegments; i++)
+        {
+            stepSize = i * steps;
+
+            // TODO in the future project triangle to actual diffVec
+            double modZ = 0;
+            if (i % 2 == 0)
+            {
+                modZ = -amplitude;
+            }
+            else
+            {
+                modZ = amplitude;
+            }
+            line->AddPoint(target.x + diffVec.x * stepSize, target.y + diffVec.y * stepSize + branchShift, target.z + diffVec.z * stepSize + modZ, common::Color::White);
+        }
+
+        // spring branch point
+        line->AddPoint(target.x + diffVec.x * stepSize, target.y + diffVec.y * stepSize, target.z + diffVec.z * stepSize, common::Color::White);
+
+        // damper branch point
+        line_damper->AddPoint(target.x + diffVec.x * stepSize, target.y + diffVec.y * stepSize - branchShift, target.z + diffVec.z * stepSize, common::Color::White);
+
+        // damper branch in point
+        line_damper->AddPoint(target.x + diffVec.x * stepSize, target.y + diffVec.y * stepSize, target.z + diffVec.z * stepSize, common::Color::White);
+
+        // spring last point
+        line->AddPoint(anchor.x, anchor.y, anchor.z, common::Color::White);
+
+        // damper last point
+        line_damper->AddPoint(anchor.x, anchor.y, anchor.z, common::Color::White);
+
+        if (!line_damper->isVisible())
+        {
+            line_damper->setVisible(true);
+        }
+
+        // damper
+        double xLengthFactor = dist * 0.15;
+        bbox.min.x = -xLengthFactor;
+        bbox.max.x = xLengthFactor;
+        this->wbox->Init(bbox);
+        // show damping parts
+        if (!this->wireBoxSceneNode->GetVisible())
+        {
+            this->wireBoxSceneNode->SetVisible(true);
+        }
+        eye.X(target.x + diffVec.x * 0.5);
+        eye.Y(target.y + diffVec.y * 0.5 - branchShift);
+        eye.Z(target.z + diffVec.z * 0.5);
+        targetLook.X(target.x);
+        targetLook.Y(target.y - branchShift);
+        targetLook.Z(target.z);
+        auto lookat = ignition::math::Matrix4d::LookAt(eye, targetLook, upLookAtVec).Pose();
+        this->wireBoxSceneNode->SetPose(lookat);
+    }
+
+    void Update()
+    {
+        if (!this->visual)
+        {
+            gzerr << "[VirtualSpringVisual] The visual is null." << std::endl;
+            return;
+        }
+        if (!firstReceived)
+        {
+            return;
+        }
+        if (anchor_old == anchor && target_old == target && reference_old == reference)
+        {
+            // Skip recalculations is nothing is changing!
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(this->mutex);
+
+        line->Clear();
+        line_damper->Clear();
+
+        // check what kind of spring-damping system this is
+        if (stiffness == math::Vector3::Zero && stiffness_orient == math::Vector3::Zero)
+        {
+            drawDamper();
+        }
+        else if (damping == math::Vector3::Zero && damping_orient == math::Vector3::Zero)
+        {
+            drawSpring();
+        }
+        else
+        {
+            drawSpringDamper();
+        }
 
         math::Vector3 middleVec = target + (anchor - target) * 0.5;
         // set stiffness
         stiffnessText->SetText("Stiff.L.: " + std::to_string(stiffness.x) + ", " + std::to_string(stiffness.y) + ", " + std::to_string(stiffness.z));
-        stiffnessTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z);
+        stiffnessTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.1);
 
         // set damping
         dampingText->SetText("Damp.L.: " + std::to_string(damping.x) + ", " + std::to_string(damping.y) + ", " + std::to_string(damping.z));
-        dampingTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.03);
+        dampingTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.13);
 
         // set stiffness_orient
         stiffness_orientText->SetText("Stiff.A.: " + std::to_string(stiffness_orient.x) + ", " + std::to_string(stiffness_orient.y) + ", " + std::to_string(stiffness_orient.z));
-        stiffness_orientTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.06);
+        stiffness_orientTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.16);
 
         // set damping_orient
         damping_orientText->SetText("Damp.A.: " + std::to_string(damping_orient.x) + ", " + std::to_string(damping_orient.y) + ", " + std::to_string(damping_orient.z));
-        damping_orientTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.09);
+        damping_orientTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.19);
 
         if (!referenceFrameVis->GetVisible())
         {
@@ -351,6 +505,9 @@ class VirtualSpringVisual : public VisualPlugin
 
     /// \brief Triangle line.
     rendering::DynamicLines *line;
+
+    /// \brief Additional Damper line.
+    rendering::DynamicLines *line_damper;
 
     /// \brief Pointer to scene.
     rendering::ScenePtr scene;
