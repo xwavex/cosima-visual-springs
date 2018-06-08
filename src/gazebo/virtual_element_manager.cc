@@ -225,7 +225,10 @@ public:
                         </visual>\
                       </link>\
                       <plugin name='virtual_constraint' filename='libcosima_gazebo_virtual_constraint.so'>\
-                          <anchor model='spring0' link='link' />\
+                          <anchor model='spring0' link='link'>\
+                            <offset>0 0 0 0 0 0</offset>\
+                            <!-- hier kann auch ohne model and link, <frame> eine konstante definieren -->\
+                          </anchor>\
                           <target model='spring1' link='link' />\
                           <!-- point, direction, constraint_direction -->\
                           <anchor_type>point</anchor_type>\
@@ -261,10 +264,11 @@ public:
                         </visual>\
                       </link>\
                       <plugin name='virtual_constraint' filename='libcosima_gazebo_virtual_constraint.so'>\
-                          <frame>0 0 1 0 0 0</frame>\
+                          <!-- Direction hat hier nicht die semantik eines fixen ankers sondern des direction vectors -->\
+                          <direction>0 0 1 0 0 0</direction>\
                           <target model='spring1' link='link' />\
                           <!-- point, direction, constraint_direction -->\
-                          <anchor_type>point</anchor_type>\
+                          <anchor_type>direction</anchor_type>\
                       </plugin>\
                     </model>\
                   </sdf>");
