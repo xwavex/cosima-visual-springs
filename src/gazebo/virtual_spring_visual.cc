@@ -114,16 +114,19 @@ class VirtualSpringVisual : public VisualPlugin
 
         this->wireBoxSceneNode = rendering::VisualPtr(new gazebo::rendering::Visual(this->visual_draw->GetName() + "__damper_WIREBOX_NODE__", this->visual_draw));
         this->wireBoxSceneNode->Load();
-        this->wireBoxSceneNode->SetVisible(true);
-        math::Box bbox = this->visual->GetBoundingBox();
-        bbox.min = bbox.min * 1;
-        bbox.max = bbox.max * 1;
+        this->wireBoxSceneNode->SetVisible(false);
+        bbox = this->visual->GetBoundingBox();
+        damperDimensions = 0.02;
+        bbox.min.x = -damperDimensions;
+        bbox.max.x = damperDimensions;
+        bbox.min.y = -damperDimensions;
+        bbox.max.y = damperDimensions;
+        bbox.min.z = -damperDimensions;
+        bbox.max.z = damperDimensions;
         wbox = new rendering::WireBox(this->wireBoxSceneNode, bbox);
-        // wbox->SetVisible(false);
-        math::Vector3 pppooosss(0, 3, 1);
-
-        // TODO pose and look at function!
-        this->wireBoxSceneNode->SetPosition(pppooosss);
+        upLookAtVec = ignition::math::Vector3d(0, 0, 1);
+        eye = ignition::math::Vector3d(0, 0, 0);
+        targetLook = ignition::math::Vector3d(0, 0, 0);
 
         gzdbg
             << "[VirtualSpringVisual] " << this->visual->GetName() << " subscribed to " << this->infoSub->GetTopic() << std::endl;
@@ -183,6 +186,24 @@ class VirtualSpringVisual : public VisualPlugin
             }
             line->AddPoint(target.x + diffVec.x * stepSize, target.y + diffVec.y * stepSize, target.z + diffVec.z * stepSize + modZ, common::Color::White);
         }
+
+        // TODO Damper
+        double xLengthFactor = dist * 0.15;
+        bbox.min.x = -xLengthFactor;
+        bbox.max.x = xLengthFactor;
+        this->wbox->Init(bbox);
+        if (!this->wireBoxSceneNode->GetVisible())
+        {
+            this->wireBoxSceneNode->SetVisible(true);
+        }
+        eye.X(target.x + diffVec.x * 0.5);
+        eye.Y(target.y + diffVec.y * 0.5);
+        eye.Z(target.z + diffVec.z * 0.5);
+        targetLook.X(target.x);
+        targetLook.Y(target.y);
+        targetLook.Z(target.z);
+        auto lookat = ignition::math::Matrix4d::LookAt(eye, targetLook, upLookAtVec).Pose();
+        this->wireBoxSceneNode->SetPose(lookat);
 
         // last point
         line->AddPoint(anchor.x, anchor.y, anchor.z, common::Color::White);
@@ -337,6 +358,9 @@ class VirtualSpringVisual : public VisualPlugin
     /// \brief Damper visual.
     rendering::WireBox *wbox;
 
+    /// \brief Damper geometry visual.
+    math::Box bbox;
+
     /// \brief MovableText for stiffness.
     rendering::MovableText *stiffnessText;
     /// \brief SceneNode for stiffness.
@@ -362,6 +386,13 @@ class VirtualSpringVisual : public VisualPlugin
 
     /// \brief Linkframe visual for reference frame.
     gazebo::rendering::LinkFrameVisualPtr referenceFrameVis;
+
+    /// \brief y z square dimension of the damper.
+    double damperDimensions;
+
+    ignition::math::Vector3d upLookAtVec;
+    ignition::math::Vector3d eye;
+    ignition::math::Vector3d targetLook;
 };
 
 // Register this plugin with the client
