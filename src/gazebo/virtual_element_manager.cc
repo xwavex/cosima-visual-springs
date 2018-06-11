@@ -189,8 +189,8 @@ public:
                           <damping>0 0 0</damping>\
                           <stiffness_orient>0.0 0.0 0.0</stiffness_orient>\
                           <damping_orient>0 0 0</damping_orient>\
-                          <!-- point, direction, constraint_direction -->\
-                          <anchor_type>point</anchor_type>\
+                          <!-- link, direction, constraint_direction -->\
+                          <anchor_type>link</anchor_type>\
                       </plugin>\
                     </model>\
                   </sdf>");
@@ -230,8 +230,8 @@ public:
                             <!-- hier kann auch ohne model and link, <frame> eine konstante definieren -->\
                           </anchor>\
                           <target model='spring1' link='link' />\
-                          <!-- point, direction, constraint_direction -->\
-                          <anchor_type>point</anchor_type>\
+                          <!-- link, direction, constraint_direction -->\
+                          <anchor_type>link</anchor_type>\
                       </plugin>\
                     </model>\
                   </sdf>");
@@ -256,7 +256,7 @@ public:
                         <pose>0 0 0 0 0 0</pose>\
                         <visual name ='name_placeholder'>\
                           <geometry>\
-                            <empty/>\
+                            <box>0.3 0.3 0.3</box>\
                           </geometry>\
                           <plugin name='virtual_constraint_visual' filename='libcosima_gazebo_virtual_constraint_visual.so'>\
                             <topic>blaaa?</topic>\
@@ -265,9 +265,9 @@ public:
                       </link>\
                       <plugin name='virtual_constraint' filename='libcosima_gazebo_virtual_constraint.so'>\
                           <!-- Direction hat hier nicht die semantik eines fixen ankers sondern des direction vectors -->\
-                          <direction>0 0 1 0 0 0</direction>\
+                          <direction>0 0 1</direction>\
                           <target model='spring1' link='link' />\
-                          <!-- point, direction, constraint_direction -->\
+                          <!-- link, direction, constraint_direction -->\
                           <anchor_type>direction</anchor_type>\
                       </plugin>\
                     </model>\
