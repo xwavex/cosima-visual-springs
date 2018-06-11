@@ -179,6 +179,10 @@ class VirtualSpringVisual : public VisualPlugin
         {
             this->wireBoxSceneNode->SetVisible(false);
         }
+        if (this->wbox->GetVisible())
+        {
+            this->wbox->SetVisible(false);
+        }
 
         // beginning point
         line->AddPoint(target.x, target.y, target.z, common::Color::White);
@@ -232,6 +236,10 @@ class VirtualSpringVisual : public VisualPlugin
         if (!this->wireBoxSceneNode->GetVisible())
         {
             this->wireBoxSceneNode->SetVisible(true);
+        }
+        if (!this->wbox->GetVisible())
+        {
+            this->wbox->SetVisible(true);
         }
         eye.X(target.x + diffVec.x * 0.5);
         eye.Y(target.y + diffVec.y * 0.5);
@@ -315,6 +323,10 @@ class VirtualSpringVisual : public VisualPlugin
         if (!this->wireBoxSceneNode->GetVisible())
         {
             this->wireBoxSceneNode->SetVisible(true);
+        }
+        if (!this->wbox->GetVisible())
+        {
+            this->wbox->SetVisible(true);
         }
         eye.X(target.x + diffVec.x * 0.5);
         eye.Y(target.y + diffVec.y * 0.5 - branchShift);

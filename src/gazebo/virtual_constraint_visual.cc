@@ -80,13 +80,20 @@ class VirtualConstraintVisual : public VisualPlugin
         this->visual_draw->Load();
         this->visual_draw->SetVisible(true);
 
-        // Connect to the world update signal
-        this->updateConnection = event::Events::ConnectPreRender(std::bind(&VirtualConstraintVisual::Update, this));
-
         // Setup rendering components
         this->line = visual_draw->CreateDynamicLine(gazebo::rendering::RENDERING_LINE_STRIP);
         this->line->setMaterial("Gazebo/Red");
         this->line->setVisibilityFlags(GZ_VISIBILITY_GUI);
+
+        this->inWorldFrameText = new rendering::MovableText();
+        this->inWorldFrameText->Load(this->visual_draw->GetName() + "__inworldframe_TEXT__", "Damping", "Arial", 0.03, common::Color::Red);
+        this->inWorldFrameText->SetShowOnTop(true);
+        this->inWorldFrameTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__inworldframe_TEXT_NODE__");
+        this->inWorldFrameTextSceneNode->attachObject(inWorldFrameText);
+        this->inWorldFrameTextSceneNode->setInheritScale(false);
+
+        // Connect to the world update signal
+        this->updateConnection = event::Events::ConnectPreRender(std::bind(&VirtualConstraintVisual::Update, this));
 
         // this->node = transport::NodePtr(new transport::Node());
         // this->node->Init();
@@ -128,8 +135,20 @@ class VirtualConstraintVisual : public VisualPlugin
         // std::lock_guard<std::mutex> lock(this->mutex);
 
         line->Clear();
-        line->AddPoint(0, 0, 0, common::Color::White);
-        line->AddPoint(lineLength, 0, 0, common::Color::White);
+        line->AddPoint(0, 0, 0, common::Color::Red);
+        line->AddPoint(lineLength, 0, 0, common::Color::Red);
+        // cross
+        double crossLength = lineLength * 0.2;
+        line->AddPoint(lineLength, crossLength, crossLength, common::Color::Red);
+        line->AddPoint(lineLength, -crossLength, -crossLength, common::Color::Red);
+        line->AddPoint(lineLength, 0, 0, common::Color::Red);
+        line->AddPoint(lineLength, crossLength, -crossLength, common::Color::Red);
+        line->AddPoint(lineLength, -crossLength, crossLength, common::Color::Red);
+
+        math::Vector3 vec(1, 0, 0);
+        math::Vector3 finalVec = this->visual_draw->GetWorldPose().rot.RotateVector(vec);
+        inWorldFrameText->SetText("(" + std::to_string(finalVec.x) + ", " + std::to_string(finalVec.y) + ", " + std::to_string(finalVec.z) + ")");
+        inWorldFrameTextSceneNode->setPosition(0, 0, 0);
     }
 
     /// \brief Visual whose color will be changed.
@@ -141,6 +160,11 @@ class VirtualConstraintVisual : public VisualPlugin
 
     /// \brief Connects to rendering update event.
     event::ConnectionPtr updateConnection;
+
+    /// \brief MovableText for daming.
+    rendering::MovableText *inWorldFrameText;
+    /// \brief SceneNode for daming.
+    Ogre::SceneNode *inWorldFrameTextSceneNode;
 
     // /// \brief Node used for communication.
     // transport::NodePtr node;
