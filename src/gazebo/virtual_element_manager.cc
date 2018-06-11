@@ -241,7 +241,8 @@ public:
             // TODO take care of unique names!
             model4->GetAttribute("name")->SetFromString("constraintGhost");
             model4->GetElement("link")->GetElement("visual")->GetAttribute("name")->SetFromString("constraintGhost");
-            world->InsertModelSDF(sphereSDF4);
+            // TODO DLW
+            // world->InsertModelSDF(sphereSDF4);
 
             // TODO constraint which dynamic links
             sdf::SDF sphereSDF5;
@@ -256,16 +257,16 @@ public:
                         <pose>0 0 0 0 0 0</pose>\
                         <visual name ='name_placeholder'>\
                           <geometry>\
-                            <box>0.3 0.3 0.3</box>\
+                            <box><size>0.2 0.05 0.05</size></box>\
                           </geometry>\
                           <plugin name='virtual_constraint_visual' filename='libcosima_gazebo_virtual_constraint_visual.so'>\
-                            <topic>blaaa?</topic>\
+                            <topic>blaaa</topic>\
                          </plugin>\
                         </visual>\
                       </link>\
                       <plugin name='virtual_constraint' filename='libcosima_gazebo_virtual_constraint.so'>\
                           <!-- Direction hat hier nicht die semantik eines fixen ankers sondern des direction vectors -->\
-                          <direction>0 0 1</direction>\
+                          <direction>1 0 0</direction>\
                           <target model='spring1' link='link' />\
                           <!-- link, direction, constraint_direction -->\
                           <anchor_type>direction</anchor_type>\

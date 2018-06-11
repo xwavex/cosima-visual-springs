@@ -70,6 +70,10 @@ add_library(cosima_gazebo_virtual_constraint SHARED src/gazebo/virtual_constrain
 target_link_libraries(cosima_gazebo_virtual_constraint spring_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
 add_dependencies(cosima_gazebo_virtual_constraint spring_msgs)
 
+add_library(cosima_gazebo_virtual_constraint_visual SHARED src/gazebo/virtual_constraint_visual.cc)
+target_link_libraries(cosima_gazebo_virtual_constraint_visual spring_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+add_dependencies(cosima_gazebo_virtual_constraint_visual spring_msgs)
+
 # add_library(virtual_spring_visual_sp SHARED src/gazebo/virtual_spring_visual_sp.cc)
 # target_link_libraries(virtual_spring_visual_sp ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
 

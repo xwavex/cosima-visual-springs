@@ -71,9 +71,20 @@ class VirtualConstraintVisual : public VisualPlugin
             return;
         }
         this->visual = _visual;
+        this->visual->SetVisible(true);
+
+        // this->scene = rendering::get_scene();
+        this->visual_draw = gazebo::rendering::VisualPtr(new gazebo::rendering::Visual(this->visual->GetName() + "_draw", this->visual));
+        this->visual_draw->Load();
+        this->visual_draw->SetVisible(true);
 
         // Connect to the world update signal
         this->updateConnection = event::Events::ConnectPreRender(std::bind(&VirtualConstraintVisual::Update, this));
+
+        // Setup rendering components
+        this->line = visual_draw->CreateDynamicLine(gazebo::rendering::RENDERING_LINE_STRIP);
+        this->line->setMaterial("Gazebo/Red");
+        this->line->setVisibilityFlags(GZ_VISIBILITY_GUI);
 
         // this->node = transport::NodePtr(new transport::Node());
         // this->node->Init();
@@ -91,10 +102,21 @@ class VirtualConstraintVisual : public VisualPlugin
   private:
     void Update()
     {
-        if (!this->visual)
+        if (!this->visual || !this->visual_draw)
         {
             gzerr << "[VirtualConstraintVisual] The visual is null." << std::endl;
             return;
+        }
+
+        if (!this->line)
+        {
+            gzerr << "[VirtualConstraintVisual] The line to draw is null." << std::endl;
+            return;
+        }
+
+        if (!line->isVisible())
+        {
+            line->setVisible(true);
         }
         // if (!firstReceived)
         // {
@@ -102,10 +124,26 @@ class VirtualConstraintVisual : public VisualPlugin
         // }
 
         // std::lock_guard<std::mutex> lock(this->mutex);
+
+        line->Clear();
+        // // beginning point
+        // line->AddPoint(this->visual->GetPosition().x, this->visual->GetPosition().y, this->visual->GetPosition().z, common::Color::White);
+
+        line->AddPoint(0, 0, 0, common::Color::White);
+
+        // norm vec to get a fixed distance
+        // math::Vector3 norm = this->visual->GetWorldPose().pos.Normalize();
+        // std::cout << "norm " << norm << std::endl;
+        // std::cout << "vv " << this->visual->GetWorldPose() << std::endl;
+        // std::cout << "dv " << this->visual_draw->GetWorldPose() << std::endl;
+        line->AddPoint(1, 0, 0, common::Color::White);
+
+        // line->AddPoint(this->visual->GetPosition().x - norm.x, this->visual->GetPosition().y - norm.y, this->visual->GetPosition().z - norm.z, common::Color::White);
     }
 
     /// \brief Visual whose color will be changed.
     rendering::VisualPtr visual;
+    rendering::VisualPtr visual_draw;
 
     /// \brief Connects to rendering update event.
     event::ConnectionPtr updateConnection;
@@ -121,6 +159,9 @@ class VirtualConstraintVisual : public VisualPlugin
 
     // /// \brief Check if spring msg was received..
     // bool firstReceived;
+
+    /// \brief Triangle line.
+    rendering::DynamicLines *line;
 };
 
 // Register this plugin with the client

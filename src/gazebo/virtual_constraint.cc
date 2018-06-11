@@ -314,19 +314,21 @@ class VirtualConstraint : public ModelPlugin
         {
             // get pose of links
             math::Pose aLinkWorldPose;
+            math::Vector3 lookAtVector;
+            math::Pose tLinkWorldPose = this->target_link->GetWorldPose();
+
             if (anchor_type.compare("link") == 0)
             {
                 aLinkWorldPose = this->anchor_link->GetWorldPose();
+                lookAtVector = aLinkWorldPose.pos;
             }
             else
             {
-                aLinkWorldPose.pos = this->global_anchor_as_target_offset;
-                aLinkWorldPose.rot.SetToIdentity();
+                lookAtVector = (tLinkWorldPose.pos + this->global_anchor_as_target_offset);
             }
-            math::Pose tLinkWorldPose = this->target_link->GetWorldPose();
 
             auto eye = ignition::math::Vector3d(tLinkWorldPose.pos.x, tLinkWorldPose.pos.y, tLinkWorldPose.pos.z);
-            auto target = ignition::math::Vector3d(aLinkWorldPose.pos.x, aLinkWorldPose.pos.y, aLinkWorldPose.pos.z);
+            auto target = ignition::math::Vector3d(lookAtVector.x, lookAtVector.y, lookAtVector.z);
             auto up = ignition::math::Vector3d(0, 0, 1);
             auto lookat = ignition::math::Matrix4d::LookAt(eye, target, up).Pose();
             this->model->SetWorldPose(lookat);
