@@ -40,6 +40,7 @@
 #include <gazebo/common/Time.hh>
 
 #include "spring.pb.h"
+#include "spring_constraint_mapping.hh"
 
 using namespace gazebo;
 
@@ -325,6 +326,26 @@ class VirtualSpring : public ModelPlugin
             // auto lookat = ignition::math::Matrix4d::LookAt(eye, target, up).Pose();
             // this->model->SetWorldPose(lookat);
 
+            math::Pose accumulatedConstrainedPose;
+            accumulatedConstrainedPose = math::Pose::Zero;
+
+            // get available constraints
+            SpringConstraintMapping &scm = SpringConstraintMapping::Get();
+            if (scm.LinkContained(target_link_name))
+            {
+                SpringConstraintMapping::ConstraintPtrVec scmap = scm.GetConstraintVec(target_link_name);
+                for (SpringConstraintMapping::ConstraintPtrVec::iterator it = scmap.begin(); it < scmap.end(); it++)
+                {
+                    std::shared_ptr<SpringConstraintMapping::Constraint> constraint_other = *it;
+                    std::lock_guard<std::mutex> lock(constraint_other->constraint_mutex);
+                    // TODO this is WRONG I guess!
+                    accumulatedConstrainedPose += constraint_other->constraintPose;
+                }
+            }
+
+            math::Vector3 translationConstrained = math::Vector3::One - accumulatedConstrainedPose.pos;
+            math::Vector3 rotationConstrained = math::Vector3::One - accumulatedConstrainedPose.rot.GetAsEuler();
+
             // get force on links
             math::Vector3 tLinkWorldLinVelocity = this->target_link->GetWorldLinearVel();
             math::Vector3 tLinkWorldAngVelocity = this->target_link->GetWorldAngularVel();
@@ -335,9 +356,16 @@ class VirtualSpring : public ModelPlugin
             math::Quaternion tmpQuat = aLinkWorldPose.rot - tLinkWorldPose.rot;
             math::Vector3 resultingForceOnTargetTorque = -dampingOrient * tLinkWorldAngVelocity + stiffnessOrient * tmpQuat.GetAsEuler();
 
+            // TODO use the accumulatedConstrainedPose to prject everything to Zero!
+
             // apply force and torque to the target link
-            this->target_link->AddForce(resultingForceOnTargetForce);
-            this->target_link->AddTorque(resultingForceOnTargetTorque);
+
+            // std::cout << "translationConstrained " << translationConstrained << std::endl;
+            // distinguish between global and non global?
+            this->target_link->AddForce(resultingForceOnTargetForce * translationConstrained);
+            this->target_link->AddTorque(resultingForceOnTargetTorque * rotationConstrained);
+
+            // std::cout << "resultingforce " << resultingForceOnTargetForce * translationConstrained << std::endl;
         }
     }
 

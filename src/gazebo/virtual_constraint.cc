@@ -40,6 +40,7 @@
 #include <gazebo/common/Time.hh>
 
 #include "constraint.pb.h"
+#include "spring_constraint_mapping.hh"
 
 using namespace gazebo;
 
@@ -55,6 +56,10 @@ class VirtualConstraint : public ModelPlugin
         this->factoryPub.reset();
         if (this->node)
             this->node->Fini();
+        if (this->constraint)
+        {
+            SpringConstraintMapping::Get().Remove(target_link_name, this->constraint);
+        }
     }
 
     void Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
@@ -64,6 +69,8 @@ class VirtualConstraint : public ModelPlugin
             gzerr << "No model or SDF element specified. Plugin won't load." << std::endl;
             return;
         }
+
+        firstIteration = true;
 
         // Store the pointer to the model
         this->model = _parent;
@@ -197,12 +204,15 @@ class VirtualConstraint : public ModelPlugin
         constraintMsg.set_id(this->model->GetId());
         constraintMsg.set_name(this->model->GetName());
 
-        std::cout
-            << "Plugin Pubs to /gazebo/" << this->model->GetName() << "::link::" << this->model->GetName() << "/constraint" << std::endl;
+        // add constraint to storage
+        this->constraint = std::make_shared<SpringConstraintMapping::Constraint>();
+        this->constraint->name = this->model->GetName();
 
         // Listen to the update event. This event is broadcast every simulation iteration.
         this->update_connection = event::Events::ConnectWorldUpdateBegin(boost::bind(&VirtualConstraint::OnUpdate, this, _1));
         // this->after_connection = event::Events::ConnectWorldUpdateEnd(std::bind(&VirtualConstraint::OnUpdateEnd, this));
+        std::cout
+            << "Plugin Pubs to /gazebo/" << this->model->GetName() << "::link::" << this->model->GetName() << "/constraint" << std::endl;
     }
 
     // void VirtualConstraint::Connect()
@@ -327,6 +337,12 @@ class VirtualConstraint : public ModelPlugin
 
         if (allInformationAvailableToProceed(this->anchor_type))
         {
+            if (firstIteration)
+            {
+                // Only add each constraint once!
+                SpringConstraintMapping::Get().Add(target_link_name, this->constraint);
+                firstIteration = false;
+            }
             // get pose of links
             math::Pose aLinkWorldPose;
             math::Vector3 lookAtVector;
@@ -377,6 +393,22 @@ class VirtualConstraint : public ModelPlugin
                 factoryPub->Publish(constraintMsg);
                 old_wall_time = gz_time;
             }
+
+            // update global storage
+            {
+                std::lock_guard<std::mutex> lock(this->constraint->constraint_mutex);
+                this->constraint->in_world_frame = isGlobal;
+                if (isGlobal)
+                {
+                    this->constraint->constraintPose.pos = this->global_anchor_as_target_offset;
+                    // TODO what about the orientation?
+                }
+                else
+                {
+                    // TODO not sure if this is correct?
+                    this->constraint->constraintPose.pos = tLinkWorldPose.rot.RotateVector(this->global_anchor_as_target_offset);
+                }
+            }
         }
     }
 
@@ -419,6 +451,11 @@ class VirtualConstraint : public ModelPlugin
     transport::PublisherPtr factoryPub;
 
     cosima_gazebo_virtual_elements::msgs::Constraint constraintMsg;
+
+    // Storage container
+    std::shared_ptr<SpringConstraintMapping::Constraint> constraint;
+
+    bool firstIteration;
 };
 
 // Register this plugin with the simulator
