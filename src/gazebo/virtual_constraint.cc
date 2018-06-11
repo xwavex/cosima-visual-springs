@@ -135,6 +135,8 @@ class VirtualConstraint : public ModelPlugin
                 gzerr << "VirtualConstraint plugin's direction vector is Zero, cannot proceed" << std::endl;
                 return;
             }
+            isGlobal = true;
+            _sdf->GetElement("direction")->GetAttribute("in_world_frame")->Get(this->isGlobal);
         }
 
         if (!_sdf->HasElement("target"))
@@ -324,7 +326,14 @@ class VirtualConstraint : public ModelPlugin
             }
             else
             {
-                lookAtVector = (tLinkWorldPose.pos + this->global_anchor_as_target_offset);
+                if (isGlobal)
+                {
+                    lookAtVector = (tLinkWorldPose.pos + this->global_anchor_as_target_offset);
+                }
+                else
+                {
+                    lookAtVector = tLinkWorldPose.pos + tLinkWorldPose.rot.RotateVector(this->global_anchor_as_target_offset);
+                }
             }
 
             auto eye = ignition::math::Vector3d(tLinkWorldPose.pos.x, tLinkWorldPose.pos.y, tLinkWorldPose.pos.z);
@@ -363,6 +372,8 @@ class VirtualConstraint : public ModelPlugin
     math::Vector3 anchor_old;
     math::Vector3 target_old;
     math::Pose reference_old;
+
+    bool isGlobal;
 
     math::Vector3 global_anchor_as_target_offset;
 };

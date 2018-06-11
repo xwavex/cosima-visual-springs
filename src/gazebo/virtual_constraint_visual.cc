@@ -73,6 +73,8 @@ class VirtualConstraintVisual : public VisualPlugin
         this->visual = _visual;
         this->visual->SetVisible(true);
 
+        this->lineLength = 0.4;
+
         // this->scene = rendering::get_scene();
         this->visual_draw = gazebo::rendering::VisualPtr(new gazebo::rendering::Visual(this->visual->GetName() + "_draw", this->visual));
         this->visual_draw->Load();
@@ -126,24 +128,16 @@ class VirtualConstraintVisual : public VisualPlugin
         // std::lock_guard<std::mutex> lock(this->mutex);
 
         line->Clear();
-        // // beginning point
-        // line->AddPoint(this->visual->GetPosition().x, this->visual->GetPosition().y, this->visual->GetPosition().z, common::Color::White);
-
         line->AddPoint(0, 0, 0, common::Color::White);
-
-        // norm vec to get a fixed distance
-        // math::Vector3 norm = this->visual->GetWorldPose().pos.Normalize();
-        // std::cout << "norm " << norm << std::endl;
-        // std::cout << "vv " << this->visual->GetWorldPose() << std::endl;
-        // std::cout << "dv " << this->visual_draw->GetWorldPose() << std::endl;
-        line->AddPoint(1, 0, 0, common::Color::White);
-
-        // line->AddPoint(this->visual->GetPosition().x - norm.x, this->visual->GetPosition().y - norm.y, this->visual->GetPosition().z - norm.z, common::Color::White);
+        line->AddPoint(lineLength, 0, 0, common::Color::White);
     }
 
     /// \brief Visual whose color will be changed.
     rendering::VisualPtr visual;
     rendering::VisualPtr visual_draw;
+
+    /// \brief length of line.
+    double lineLength;
 
     /// \brief Connects to rendering update event.
     event::ConnectionPtr updateConnection;

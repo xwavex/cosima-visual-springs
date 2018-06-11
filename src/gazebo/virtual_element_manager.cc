@@ -257,7 +257,7 @@ public:
                         <pose>0 0 0 0 0 0</pose>\
                         <visual name ='name_placeholder'>\
                           <geometry>\
-                            <box><size>0.2 0.05 0.05</size></box>\
+                            <empty/>\
                           </geometry>\
                           <plugin name='virtual_constraint_visual' filename='libcosima_gazebo_virtual_constraint_visual.so'>\
                             <topic>blaaa</topic>\
@@ -266,7 +266,7 @@ public:
                       </link>\
                       <plugin name='virtual_constraint' filename='libcosima_gazebo_virtual_constraint.so'>\
                           <!-- Direction hat hier nicht die semantik eines fixen ankers sondern des direction vectors -->\
-                          <direction>1 0 0</direction>\
+                          <direction in_world_frame='true'>1 0 0</direction>\
                           <target model='spring1' link='link' />\
                           <!-- link, direction, constraint_direction -->\
                           <anchor_type>direction</anchor_type>\
