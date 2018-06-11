@@ -165,10 +165,10 @@ class VirtualSpring : public ModelPlugin
         node = transport::NodePtr(new transport::Node());
         node->Init(this->model->GetName());
         // ALL ON THE SAME TOPIC
-        // factoryPub = node->Advertise<cosima_gazebo_virtual_spring::msgs::Spring>("/gazebo/" + world->GetName() + "/springs");
+        // factoryPub = node->Advertise<cosima_gazebo_virtual_elements::msgs::Spring>("/gazebo/" + world->GetName() + "/springs");
 
         // TOPIC PER SPRING
-        factoryPub = node->Advertise<cosima_gazebo_virtual_spring::msgs::Spring>("/gazebo/" + this->model->GetName() + "::link::" + this->model->GetName() + "/spring");
+        factoryPub = node->Advertise<cosima_gazebo_virtual_elements::msgs::Spring>("/gazebo/" + this->model->GetName() + "::link::" + this->model->GetName() + "/spring");
         std::cout << "Plugin Pubs to /gazebo/" << this->model->GetName() << "::link::" << this->model->GetName() << "/spring" << std::endl;
         // std::string modelNameId = this->model->GetName() + std::to_string(this->model->GetId());
         springMsg.set_id(this->model->GetId());
@@ -371,7 +371,7 @@ class VirtualSpring : public ModelPlugin
 
     transport::NodePtr node;
     transport::PublisherPtr factoryPub;
-    cosima_gazebo_virtual_spring::msgs::Spring springMsg;
+    cosima_gazebo_virtual_elements::msgs::Spring springMsg;
 };
 
 // Register this plugin with the simulator

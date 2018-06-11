@@ -39,6 +39,8 @@
 #include <gazebo/transport/transport.hh>
 #include <gazebo/common/Time.hh>
 
+#include "constraint.pb.h"
+
 using namespace gazebo;
 
 namespace cosima
@@ -50,10 +52,9 @@ class VirtualConstraint : public ModelPlugin
     ~VirtualConstraint()
     {
         event::Events::DisconnectWorldUpdateBegin(this->update_connection);
-        // event::Events::DisconnectWorldUpdateEnd(this->after_connection);
-        // this->factoryPub.reset();
-        // if (this->node)
-        //     this->node->Fini();
+        this->factoryPub.reset();
+        if (this->node)
+            this->node->Fini();
     }
 
     void Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
@@ -186,6 +187,18 @@ class VirtualConstraint : public ModelPlugin
 
         anchor_model = 0;
         target_model = 0;
+
+        node = transport::NodePtr(new transport::Node());
+        node->Init(this->model->GetName());
+        this->sendSecondsElapsed = 1.0;
+        // TOPIC PER SPRING
+        factoryPub = node->Advertise<cosima_gazebo_virtual_elements::msgs::Constraint>("/gazebo/" + this->model->GetName() + "::link::" + this->model->GetName() + "/constraint");
+
+        constraintMsg.set_id(this->model->GetId());
+        constraintMsg.set_name(this->model->GetName());
+
+        std::cout
+            << "Plugin Pubs to /gazebo/" << this->model->GetName() << "::link::" << this->model->GetName() << "/constraint" << std::endl;
 
         // Listen to the update event. This event is broadcast every simulation iteration.
         this->update_connection = event::Events::ConnectWorldUpdateBegin(boost::bind(&VirtualConstraint::OnUpdate, this, _1));
@@ -341,13 +354,35 @@ class VirtualConstraint : public ModelPlugin
             auto up = ignition::math::Vector3d(0, 0, 1);
             auto lookat = ignition::math::Matrix4d::LookAt(eye, target, up).Pose();
             this->model->SetWorldPose(lookat);
+
+            gazebo::common::Time gz_time = common::Time::GetWallTime();
+            if (factoryPub->HasConnections() && (gz_time.sec - old_wall_time.sec > this->sendSecondsElapsed))
+            {
+                constraintMsg.set_anchor_type(this->anchor_type);
+
+                constraintMsg.mutable_anchor()->mutable_position()->set_x(lookat.Pos().X());
+                constraintMsg.mutable_anchor()->mutable_position()->set_y(lookat.Pos().Y());
+                constraintMsg.mutable_anchor()->mutable_position()->set_z(lookat.Pos().Z());
+                constraintMsg.mutable_anchor()->mutable_orientation()->set_w(lookat.Rot().W());
+                constraintMsg.mutable_anchor()->mutable_orientation()->set_x(lookat.Rot().X());
+                constraintMsg.mutable_anchor()->mutable_orientation()->set_y(lookat.Rot().Y());
+                constraintMsg.mutable_anchor()->mutable_orientation()->set_z(lookat.Rot().Z());
+
+                constraintMsg.set_in_world_frame(this->isGlobal);
+
+                gazebo::common::Time gz_time = gazebo::physics::get_world()->GetSimTime();
+                constraintMsg.mutable_time()->set_nsec(gz_time.nsec);
+                constraintMsg.mutable_time()->set_sec(gz_time.sec);
+
+                factoryPub->Publish(constraintMsg);
+                old_wall_time = gz_time;
+            }
         }
     }
 
   private:
     // Pointer to the update event connection
     event::ConnectionPtr update_connection;
-    // event::ConnectionPtr after_connection;
 
     physics::ModelPtr model;
     physics::LinkPtr link;
@@ -375,7 +410,15 @@ class VirtualConstraint : public ModelPlugin
 
     bool isGlobal;
 
+    double sendSecondsElapsed;
+    gazebo::common::Time old_wall_time;
+
     math::Vector3 global_anchor_as_target_offset;
+
+    transport::NodePtr node;
+    transport::PublisherPtr factoryPub;
+
+    cosima_gazebo_virtual_elements::msgs::Constraint constraintMsg;
 };
 
 // Register this plugin with the simulator

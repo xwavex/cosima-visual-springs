@@ -25,16 +25,15 @@ foreach(ITR ${GAZEBO_INCLUDE_DIRS})
 endforeach()
 set (msgs
   src/gazebo/msgs/spring.proto
+  src/gazebo/msgs/constraint.proto
   ${PROTOBUF_IMPORT_DIRS}/vector3d.proto
-  # Not sure about the one below...
-  #${PROTOBUF_IMPORT_DIRS}/header.proto
   ${PROTOBUF_IMPORT_DIRS}/pose.proto
   ${PROTOBUF_IMPORT_DIRS}/quaternion.proto
   ${PROTOBUF_IMPORT_DIRS}/time.proto
 )
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${msgs})
-add_library(spring_msgs SHARED ${PROTO_SRCS})
-target_link_libraries(spring_msgs ${PROTOBUF_LIBRARY})
+add_library(virtual_elements_msgs SHARED ${PROTO_SRCS})
+target_link_libraries(virtual_elements_msgs ${PROTOBUF_LIBRARY})
 
 
 find_package(ignition-transport2 QUIET)
@@ -59,20 +58,20 @@ add_library(virtual_element_manager SHARED src/gazebo/virtual_element_manager.cc
 target_link_libraries(virtual_element_manager ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
 
 add_library(cosima_gazebo_virtual_spring SHARED src/gazebo/virtual_spring.cc)
-target_link_libraries(cosima_gazebo_virtual_spring spring_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
-add_dependencies(cosima_gazebo_virtual_spring spring_msgs)
+target_link_libraries(cosima_gazebo_virtual_spring virtual_elements_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+add_dependencies(cosima_gazebo_virtual_spring virtual_elements_msgs)
 
 add_library(cosima_gazebo_virtual_spring_visual SHARED src/gazebo/virtual_spring_visual.cc)
-target_link_libraries(cosima_gazebo_virtual_spring_visual spring_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
-add_dependencies(cosima_gazebo_virtual_spring_visual spring_msgs)
+target_link_libraries(cosima_gazebo_virtual_spring_visual virtual_elements_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+add_dependencies(cosima_gazebo_virtual_spring_visual virtual_elements_msgs)
 
 add_library(cosima_gazebo_virtual_constraint SHARED src/gazebo/virtual_constraint.cc)
-target_link_libraries(cosima_gazebo_virtual_constraint spring_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
-add_dependencies(cosima_gazebo_virtual_constraint spring_msgs)
+target_link_libraries(cosima_gazebo_virtual_constraint virtual_elements_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+add_dependencies(cosima_gazebo_virtual_constraint virtual_elements_msgs)
 
 add_library(cosima_gazebo_virtual_constraint_visual SHARED src/gazebo/virtual_constraint_visual.cc)
-target_link_libraries(cosima_gazebo_virtual_constraint_visual spring_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
-add_dependencies(cosima_gazebo_virtual_constraint_visual spring_msgs)
+target_link_libraries(cosima_gazebo_virtual_constraint_visual virtual_elements_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+add_dependencies(cosima_gazebo_virtual_constraint_visual virtual_elements_msgs)
 
 # add_library(virtual_spring_visual_sp SHARED src/gazebo/virtual_spring_visual_sp.cc)
 # target_link_libraries(virtual_spring_visual_sp ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})

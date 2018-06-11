@@ -404,7 +404,7 @@ class VirtualSpringVisual : public VisualPlugin
         reference_old = reference;
     }
 
-    void OnInfo(const boost::shared_ptr<cosima_gazebo_virtual_spring::msgs::Spring const> &_msg)
+    void OnInfo(const boost::shared_ptr<cosima_gazebo_virtual_elements::msgs::Spring const> &_msg)
     {
         std::lock_guard<std::mutex> lock(this->mutex);
 
@@ -506,13 +506,13 @@ class VirtualSpringVisual : public VisualPlugin
     /// \brief Store for damping_orient vector.
     math::Vector3 damping_orient;
 
-    /// \brief Check if spring msg was received..
+    /// \brief Check if spring msg was received.
     bool firstReceived;
 
     /// \brief Amount of triangle segments to render.
     double amountOfSegments;
 
-    /// \brief Amplitude for the triangle to render..
+    /// \brief Amplitude for the triangle to render.
     double amplitude;
 
     /// \brief Triangle line.

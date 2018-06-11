@@ -45,6 +45,8 @@
 #include <gazebo/rendering/MovableText.hh>
 #include <gazebo/rendering/LinkFrameVisual.hh>
 
+#include "constraint.pb.h"
+
 using namespace gazebo;
 
 namespace cosima
@@ -56,9 +58,9 @@ class VirtualConstraintVisual : public VisualPlugin
     ~VirtualConstraintVisual()
     {
         event::Events::DisconnectPreRender(this->updateConnection);
-        // this->infoSub.reset();
-        // if (this->node)
-        //     this->node->Fini();
+        this->infoSub.reset();
+        if (this->node)
+            this->node->Fini();
     }
 
     void Load(rendering::VisualPtr _visual, sdf::ElementPtr _sdf)
@@ -73,7 +75,11 @@ class VirtualConstraintVisual : public VisualPlugin
         this->visual = _visual;
         this->visual->SetVisible(true);
 
+        globalMaterialName = "Constraint/global";
+
         this->lineLength = 0.4;
+
+        this->in_world_frame = true;
 
         // this->scene = rendering::get_scene();
         this->visual_draw = gazebo::rendering::VisualPtr(new gazebo::rendering::Visual(this->visual->GetName() + "_draw", this->visual));
@@ -82,7 +88,7 @@ class VirtualConstraintVisual : public VisualPlugin
 
         // Setup rendering components
         this->line = visual_draw->CreateDynamicLine(gazebo::rendering::RENDERING_LINE_STRIP);
-        this->line->setMaterial("Gazebo/Red");
+        this->line->setMaterial("Gazebo/White");
         this->line->setVisibilityFlags(GZ_VISIBILITY_GUI);
 
         this->inWorldFrameText = new rendering::MovableText();
@@ -95,17 +101,44 @@ class VirtualConstraintVisual : public VisualPlugin
         // Connect to the world update signal
         this->updateConnection = event::Events::ConnectPreRender(std::bind(&VirtualConstraintVisual::Update, this));
 
-        // this->node = transport::NodePtr(new transport::Node());
-        // this->node->Init();
+        this->node = transport::NodePtr(new transport::Node());
+        this->node->Init();
 
         // FOR SINGLE SUBS!
-        // this->infoSub = this->node->Subscribe("/gazebo/" + this->visual->GetName() + "/spring", &VirtualConstraintVisual::OnInfo, this);
+        this->infoSub = this->node->Subscribe("/gazebo/" + this->visual->GetName() + "/constraint", &VirtualConstraintVisual::OnInfo, this);
 
-        // Setup rendering components
-        // TODO
+        globalMaterial = Ogre::MaterialManager::getSingleton().getByName(globalMaterialName);
+        if (globalMaterial.isNull())
+        {
+            globalMaterial = Ogre::MaterialManager::getSingleton().create(globalMaterialName, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+            globalMaterial->setAmbient(0.94, 0.27, 0.38);
+            globalMaterial->setDiffuse(0.94, 0.27, 0.38, 1);
+            globalMaterial->setSpecular(0.1, 0.1, 0.1, 1);
+        }
+        this->line->setMaterial(globalMaterialName);
 
-        // gzdbg << "[VirtualConstraintVisual] " << this->visual->GetName() << " subscribed to " << this->infoSub->GetTopic() << std::endl;
-        gzdbg << "[VirtualConstraintVisual] " << this->visual->GetName() << " successfully loaded!" << std::endl;
+        localMaterial = Ogre::MaterialManager::getSingleton().getByName(localMaterialName);
+        if (localMaterial.isNull())
+        {
+            localMaterial = Ogre::MaterialManager::getSingleton().create(localMaterialName, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+            localMaterial->setAmbient(0.48, 0.33, 0.63);
+            localMaterial->setDiffuse(0.48, 0.33, 0.63, 1);
+            localMaterial->setSpecular(0.1, 0.1, 0.1, 1);
+        }
+
+        // material Gazebo / Blue
+        // {
+        //     technique
+        //     {
+        //         pass ambient
+        //         {
+        //             ambient 0 0 1 diffuse 0 0 1 specular 0.1 0.1 0.1 1 1
+        //         }
+        //     }
+        // }
+
+        gzdbg
+            << "[VirtualConstraintVisual] " << this->visual->GetName() << " subscribed to " << this->infoSub->GetTopic() << " and is successfully loaded!" << std::endl;
     }
 
   private:
@@ -127,28 +160,55 @@ class VirtualConstraintVisual : public VisualPlugin
         {
             line->setVisible(true);
         }
-        // if (!firstReceived)
-        // {
-        //     return;
-        // }
 
-        // std::lock_guard<std::mutex> lock(this->mutex);
+        std::lock_guard<std::mutex> lock(this->mutex);
 
         line->Clear();
-        line->AddPoint(0, 0, 0, common::Color::Red);
-        line->AddPoint(lineLength, 0, 0, common::Color::Red);
+
+        gazebo::common::Color color;
+        if (firstReceived && !in_world_frame)
+        {
+            color = common::Color(0.48, 0.33, 0.63, 1.0);
+            this->line->setMaterial(localMaterialName);
+        }
+        else
+        {
+            color = common::Color(0.94, 0.27, 0.38, 1.0);
+            this->line->setMaterial(globalMaterialName);
+        }
+
+        line->AddPoint(0, 0, 0, color);
+        line->AddPoint(lineLength, 0, 0, color);
         // cross
         double crossLength = lineLength * 0.2;
-        line->AddPoint(lineLength, crossLength, crossLength, common::Color::Red);
-        line->AddPoint(lineLength, -crossLength, -crossLength, common::Color::Red);
-        line->AddPoint(lineLength, 0, 0, common::Color::Red);
-        line->AddPoint(lineLength, crossLength, -crossLength, common::Color::Red);
-        line->AddPoint(lineLength, -crossLength, crossLength, common::Color::Red);
+        line->AddPoint(lineLength, crossLength, crossLength, color);
+        line->AddPoint(lineLength, -crossLength, -crossLength, color);
+        line->AddPoint(lineLength, 0, 0, color);
+        line->AddPoint(lineLength, crossLength, -crossLength, color);
+        line->AddPoint(lineLength, -crossLength, crossLength, color);
 
         math::Vector3 vec(1, 0, 0);
         math::Vector3 finalVec = this->visual_draw->GetWorldPose().rot.RotateVector(vec);
         inWorldFrameText->SetText("(" + std::to_string(finalVec.x) + ", " + std::to_string(finalVec.y) + ", " + std::to_string(finalVec.z) + ")");
+        inWorldFrameText->SetColor(color);
         inWorldFrameTextSceneNode->setPosition(0, 0, 0);
+    }
+
+    void OnInfo(const boost::shared_ptr<cosima_gazebo_virtual_elements::msgs::Constraint const> &_msg)
+    {
+        std::lock_guard<std::mutex> lock(this->mutex);
+        // check for matching name
+        std::string visualMsgName = _msg->name() + "::link::" + _msg->name();
+        if (this->visual->GetName().compare(visualMsgName) != 0)
+        {
+            // Message is not meant for me, so skipping!
+            return;
+        }
+        if (!firstReceived)
+        {
+            firstReceived = true;
+        }
+        in_world_frame = _msg->in_world_frame();
     }
 
     /// \brief Visual whose color will be changed.
@@ -166,20 +226,35 @@ class VirtualConstraintVisual : public VisualPlugin
     /// \brief SceneNode for daming.
     Ogre::SceneNode *inWorldFrameTextSceneNode;
 
-    // /// \brief Node used for communication.
-    // transport::NodePtr node;
+    /// \brief Node used for communication.
+    transport::NodePtr node;
 
-    // /// \brief Node used for communication.
-    // std::mutex mutex;
+    /// \brief Node used for communication.
+    std::mutex mutex;
 
-    // /// \brief Subscriber to spring msg.
-    // transport::SubscriberPtr infoSub;
-
-    // /// \brief Check if spring msg was received..
-    // bool firstReceived;
+    /// \brief Subscriber to constraint msg.
+    transport::SubscriberPtr infoSub;
 
     /// \brief Triangle line.
     rendering::DynamicLines *line;
+
+    /// \brief Check if constraint msg was received.
+    bool firstReceived;
+
+    /// \brief Check if constraint is in world frame.
+    bool in_world_frame;
+
+    /// \brief Custom Ogre Material.
+    Ogre::MaterialPtr globalMaterial;
+
+    /// \brief Custom Ogre Material name.
+    std::string globalMaterialName;
+
+    /// \brief Custom Ogre Material.
+    Ogre::MaterialPtr localMaterial;
+
+    /// \brief Custom Ogre Material name.
+    std::string localMaterialName;
 };
 
 // Register this plugin with the client
