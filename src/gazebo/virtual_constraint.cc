@@ -373,8 +373,8 @@ class VirtualConstraint : public ModelPlugin
 
             math::Vector3 notGlobalCaseTranslationConstraintVec = tLinkWorldPose.rot.RotateVector(this->global_anchor_as_target_offset.pos);
 
-            gazebo::common::Time gz_time = common::Time::GetWallTime();
-            if (factoryPub->HasConnections() && (gz_time.sec - old_wall_time.sec > this->sendSecondsElapsed))
+            gazebo::common::Time gz_walltime = common::Time::GetWallTime();
+            if (factoryPub->HasConnections() && (gz_walltime.sec - old_wall_time.sec > this->sendSecondsElapsed))
             {
                 constraintMsg.set_anchor_type(this->anchor_type);
 
@@ -401,7 +401,7 @@ class VirtualConstraint : public ModelPlugin
                 constraintMsg.mutable_time()->set_sec(gz_time.sec);
 
                 factoryPub->Publish(constraintMsg);
-                old_wall_time = gz_time;
+                old_wall_time = gz_walltime;
             }
 
             // update global storage

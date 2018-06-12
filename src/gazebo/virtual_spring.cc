@@ -167,7 +167,7 @@ class VirtualSpring : public ModelPlugin
         node->Init(this->model->GetName());
         // ALL ON THE SAME TOPIC
         // factoryPub = node->Advertise<cosima_gazebo_virtual_elements::msgs::Spring>("/gazebo/" + world->GetName() + "/springs");
-
+        this->sendSecondsElapsed = 1.0;
         // TOPIC PER SPRING
         factoryPub = node->Advertise<cosima_gazebo_virtual_elements::msgs::Spring>("/gazebo/" + this->model->GetName() + "::link::" + this->model->GetName() + "/spring");
         std::cout << "Plugin Pubs to /gazebo/" << this->model->GetName() << "::link::" << this->model->GetName() << "/spring" << std::endl;
@@ -209,10 +209,17 @@ class VirtualSpring : public ModelPlugin
         math::Pose aLinkWorldPose = this->anchor_link->GetWorldPose();
         math::Pose tLinkWorldPose = this->target_link->GetWorldPose();
 
-        if (aLinkWorldPose.pos == anchor_old && tLinkWorldPose.pos == target_old && aLinkWorldPose == reference_old)
+        gazebo::common::Time gz_walltime = common::Time::GetWallTime();
+
+        // last publish time is not yet over 1 sec
+        if (gz_walltime.sec - old_wall_time.sec <= this->sendSecondsElapsed)
         {
-            // Skip sending if everything is ok!
-            return;
+            // and position is completely the same
+            if (aLinkWorldPose.pos == anchor_old && tLinkWorldPose.pos == target_old && aLinkWorldPose == reference_old)
+            {
+                // do not send in this case to save processing power
+                return;
+            }
         }
 
         // Setup message
@@ -260,6 +267,7 @@ class VirtualSpring : public ModelPlugin
         anchor_old = aLinkWorldPose.pos;
         target_old = tLinkWorldPose.pos;
         reference_old = aLinkWorldPose;
+        old_wall_time = gz_walltime;
     }
 
     // Called by the world update start event
@@ -396,6 +404,9 @@ class VirtualSpring : public ModelPlugin
     math::Vector3 anchor_old;
     math::Vector3 target_old;
     math::Pose reference_old;
+
+    double sendSecondsElapsed;
+    gazebo::common::Time old_wall_time;
 
     transport::NodePtr node;
     transport::PublisherPtr factoryPub;
