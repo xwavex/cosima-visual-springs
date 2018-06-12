@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+set (CMAKE_AUTOMOC ON)
+
 project(trajectoryService)
 
 find_package(gazebo 7.0 REQUIRED)
@@ -51,6 +53,18 @@ endif()
 include_directories(${IGNITION-TRANSPORT_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 link_directories(${IGNITION-TRANSPORT_LIBRARY_DIRS})
 
+# TODO remopve QT5
+# find_package(Qt5Widgets REQUIRED)
+# find_package(Qt5Core REQUIRED)
+# find_package(Qt5X11Extras REQUIRED)
+# include_directories(SYSTEM ${Qt5Core_INCLUDE_DIRS} ${Qt5X11Extras_INCLUDE_DIRS})
+find_package (Qt4)
+include (${QT_USE_FILE})
+add_definitions(${QT_DEFINITIONS})
+
+
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
+
 # add_library(trajectory_wp SHARED src/gazebo/trajectory_wp.cc)
 # target_link_libraries(trajectory_wp ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
 
@@ -72,6 +86,9 @@ add_dependencies(cosima_gazebo_virtual_constraint virtual_elements_msgs)
 add_library(cosima_gazebo_virtual_constraint_visual SHARED src/gazebo/virtual_constraint_visual.cc)
 target_link_libraries(cosima_gazebo_virtual_constraint_visual virtual_elements_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
 add_dependencies(cosima_gazebo_virtual_constraint_visual virtual_elements_msgs)
+
+add_library(cosima_virtual_elements_dialog SHARED ${headers_MOC} src/gazebo/ConfigureVirtualElementsDialogSpawner.cc src/gazebo/ConfigureVirtualElementsDialog.cc)
+target_link_libraries(cosima_virtual_elements_dialog ${GAZEBO_LIBRARIES} ${QT_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5X11Extras_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES} ${PROTOBUF_LIBRARIES})
 
 # add_library(virtual_spring_visual_sp SHARED src/gazebo/virtual_spring_visual_sp.cc)
 # target_link_libraries(virtual_spring_visual_sp ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
