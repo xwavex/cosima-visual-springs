@@ -78,6 +78,7 @@ class VirtualConstraintVisual : public VisualPlugin
         globalMaterialName = "Constraint/global";
 
         this->lineLength = 0.4;
+        this->crossFactor = 0.2;
 
         this->in_world_frame = true;
 
@@ -97,6 +98,25 @@ class VirtualConstraintVisual : public VisualPlugin
         this->inWorldFrameTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__inworldframe_TEXT_NODE__");
         this->inWorldFrameTextSceneNode->attachObject(inWorldFrameText);
         this->inWorldFrameTextSceneNode->setInheritScale(false);
+
+        // TODO circle!
+        this->circle = this->visual_draw->GetSceneNode()->getCreator()->createManualObject("circle_name");
+        this->circle_radius = sqrt(pow(this->lineLength * this->crossFactor, 2) * 2);
+        float const accuracy = 25;
+        this->circle->begin("BaseWhiteNoLighting", Ogre::RenderOperation::OT_LINE_STRIP);
+        unsigned point_index = 0;
+        for (float theta = 0; theta <= 2 * Ogre::Math::PI; theta += Ogre::Math::PI / accuracy)
+        {
+            this->circle->position(0, circle_radius * cos(theta), circle_radius * sin(theta));
+            this->circle->index(point_index++);
+        }
+        this->circle->index(0); // Rejoins the last point to the first.
+        this->circle->end();
+        this->circle->setCastShadows(false);
+        this->circleSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__circle_SCENE_NODE__");
+        this->circleSceneNode->attachObject(this->circle);
+        this->circleSceneNode->setInheritScale(false);
+        this->circle->setVisible(false);
 
         // Connect to the world update signal
         this->updateConnection = event::Events::ConnectPreRender(std::bind(&VirtualConstraintVisual::Update, this));
@@ -170,17 +190,19 @@ class VirtualConstraintVisual : public VisualPlugin
         {
             color = common::Color(0.48, 0.33, 0.63, 1.0);
             this->line->setMaterial(localMaterialName);
+            this->circle->setMaterialName(0, localMaterialName);
         }
         else
         {
             color = common::Color(0.94, 0.27, 0.38, 1.0);
             this->line->setMaterial(globalMaterialName);
+            this->circle->setMaterialName(0, globalMaterialName);
         }
 
         line->AddPoint(0, 0, 0, color);
         line->AddPoint(lineLength, 0, 0, color);
         // cross
-        double crossLength = lineLength * 0.2;
+        double crossLength = lineLength * crossFactor;
         line->AddPoint(lineLength, crossLength, crossLength, color);
         line->AddPoint(lineLength, -crossLength, -crossLength, color);
         line->AddPoint(lineLength, 0, 0, color);
@@ -192,6 +214,28 @@ class VirtualConstraintVisual : public VisualPlugin
         inWorldFrameText->SetText("(" + std::to_string(finalVec.x) + ", " + std::to_string(finalVec.y) + ", " + std::to_string(finalVec.z) + ")");
         inWorldFrameText->SetColor(color);
         inWorldFrameTextSceneNode->setPosition(0, 0, 0);
+
+        // create orienation constraint visual
+        if (firstReceived)
+        {
+            if (receivedConstraintPose != math::Pose::Zero)
+            {
+                math::Vector3 help = this->visual_draw->GetWorldPose().rot.RotateVector(receivedConstraintPose.rot.GetAsEuler());
+                help = help.Normalize() * lineLength;
+                auto eye = ignition::math::Vector3d(help.x, help.y, help.z);
+                auto target = ignition::math::Vector3d(help.x * 1.1, help.y * 1.1, help.z * 1.1);
+                auto up = ignition::math::Vector3d(0, 0, 1);
+                auto lookat = ignition::math::Matrix4d::LookAt(eye, target, up).Pose();
+
+                this->circleSceneNode->setPosition(lookat.Pos().X(), lookat.Pos().Y(), lookat.Pos().Z());
+                this->circleSceneNode->setOrientation(lookat.Rot().W(), lookat.Rot().X(), lookat.Rot().Y(), lookat.Rot().Z());
+                this->circle->setVisible(true);
+            }
+            else
+            {
+                this->circle->setVisible(false);
+            }
+        }
     }
 
     void OnInfo(const boost::shared_ptr<cosima_gazebo_virtual_elements::msgs::Constraint const> &_msg)
@@ -209,6 +253,13 @@ class VirtualConstraintVisual : public VisualPlugin
             firstReceived = true;
         }
         in_world_frame = _msg->in_world_frame();
+        receivedConstraintPose.pos.x = _msg->anchor().position().x();
+        receivedConstraintPose.pos.y = _msg->anchor().position().y();
+        receivedConstraintPose.pos.z = _msg->anchor().position().z();
+        receivedConstraintPose.rot.w = _msg->anchor().orientation().w();
+        receivedConstraintPose.rot.x = _msg->anchor().orientation().x();
+        receivedConstraintPose.rot.y = _msg->anchor().orientation().y();
+        receivedConstraintPose.rot.z = _msg->anchor().orientation().z();
     }
 
     /// \brief Visual whose color will be changed.
@@ -218,13 +269,26 @@ class VirtualConstraintVisual : public VisualPlugin
     /// \brief length of line.
     double lineLength;
 
+    /// \brief factor to multiply the lineLength with.
+    double crossFactor;
+
     /// \brief Connects to rendering update event.
     event::ConnectionPtr updateConnection;
 
     /// \brief MovableText for daming.
     rendering::MovableText *inWorldFrameText;
+
     /// \brief SceneNode for daming.
     Ogre::SceneNode *inWorldFrameTextSceneNode;
+
+    /// \brief Circle for constrained orientation.
+    Ogre::ManualObject *circle;
+
+    /// \brief SceneNode for circle constrained orientation.
+    Ogre::SceneNode *circleSceneNode;
+
+    /// \brief Radius of the circle constrained orientation.
+    double circle_radius;
 
     /// \brief Node used for communication.
     transport::NodePtr node;
@@ -255,6 +319,9 @@ class VirtualConstraintVisual : public VisualPlugin
 
     /// \brief Custom Ogre Material name.
     std::string localMaterialName;
+
+    /// \brief Custom Ogre Material name.
+    math::Pose receivedConstraintPose;
 };
 
 // Register this plugin with the client

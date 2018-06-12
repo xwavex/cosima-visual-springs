@@ -137,8 +137,8 @@ class VirtualConstraint : public ModelPlugin
         }
         else
         {
-            this->global_anchor_as_target_offset = _sdf->Get<math::Vector3>("direction");
-            if (this->global_anchor_as_target_offset == math::Vector3::Zero)
+            this->global_anchor_as_target_offset = _sdf->Get<math::Pose>("direction");
+            if (this->global_anchor_as_target_offset == math::Pose::Zero)
             {
                 gzerr << "VirtualConstraint plugin's direction vector is Zero, cannot proceed" << std::endl;
                 return;
@@ -357,11 +357,11 @@ class VirtualConstraint : public ModelPlugin
             {
                 if (isGlobal)
                 {
-                    lookAtVector = (tLinkWorldPose.pos + this->global_anchor_as_target_offset);
+                    lookAtVector = (tLinkWorldPose.pos + this->global_anchor_as_target_offset.pos);
                 }
                 else
                 {
-                    lookAtVector = tLinkWorldPose.pos + tLinkWorldPose.rot.RotateVector(this->global_anchor_as_target_offset);
+                    lookAtVector = tLinkWorldPose.pos + tLinkWorldPose.rot.RotateVector(this->global_anchor_as_target_offset.pos);
                 }
             }
 
@@ -371,19 +371,29 @@ class VirtualConstraint : public ModelPlugin
             auto lookat = ignition::math::Matrix4d::LookAt(eye, target, up).Pose();
             this->model->SetWorldPose(lookat);
 
+            math::Vector3 notGlobalCaseTranslationConstraintVec = tLinkWorldPose.rot.RotateVector(this->global_anchor_as_target_offset.pos);
+
             gazebo::common::Time gz_time = common::Time::GetWallTime();
             if (factoryPub->HasConnections() && (gz_time.sec - old_wall_time.sec > this->sendSecondsElapsed))
             {
                 constraintMsg.set_anchor_type(this->anchor_type);
 
-                constraintMsg.mutable_anchor()->mutable_position()->set_x(lookat.Pos().X());
-                constraintMsg.mutable_anchor()->mutable_position()->set_y(lookat.Pos().Y());
-                constraintMsg.mutable_anchor()->mutable_position()->set_z(lookat.Pos().Z());
-                constraintMsg.mutable_anchor()->mutable_orientation()->set_w(lookat.Rot().W());
-                constraintMsg.mutable_anchor()->mutable_orientation()->set_x(lookat.Rot().X());
-                constraintMsg.mutable_anchor()->mutable_orientation()->set_y(lookat.Rot().Y());
-                constraintMsg.mutable_anchor()->mutable_orientation()->set_z(lookat.Rot().Z());
-
+                constraintMsg.mutable_anchor()->mutable_orientation()->set_w(this->global_anchor_as_target_offset.rot.w);
+                constraintMsg.mutable_anchor()->mutable_orientation()->set_x(this->global_anchor_as_target_offset.rot.x);
+                constraintMsg.mutable_anchor()->mutable_orientation()->set_y(this->global_anchor_as_target_offset.rot.y);
+                constraintMsg.mutable_anchor()->mutable_orientation()->set_z(this->global_anchor_as_target_offset.rot.z);
+                if (this->isGlobal)
+                {
+                    constraintMsg.mutable_anchor()->mutable_position()->set_x(this->global_anchor_as_target_offset.pos.x);
+                    constraintMsg.mutable_anchor()->mutable_position()->set_y(this->global_anchor_as_target_offset.pos.y);
+                    constraintMsg.mutable_anchor()->mutable_position()->set_z(this->global_anchor_as_target_offset.pos.z);
+                }
+                else
+                {
+                    constraintMsg.mutable_anchor()->mutable_position()->set_x(notGlobalCaseTranslationConstraintVec.x);
+                    constraintMsg.mutable_anchor()->mutable_position()->set_y(notGlobalCaseTranslationConstraintVec.y);
+                    constraintMsg.mutable_anchor()->mutable_position()->set_z(notGlobalCaseTranslationConstraintVec.z);
+                }
                 constraintMsg.set_in_world_frame(this->isGlobal);
 
                 gazebo::common::Time gz_time = gazebo::physics::get_world()->GetSimTime();
@@ -400,13 +410,13 @@ class VirtualConstraint : public ModelPlugin
                 this->constraint->in_world_frame = isGlobal;
                 if (isGlobal)
                 {
-                    this->constraint->constraintPose.pos = this->global_anchor_as_target_offset;
-                    // TODO what about the orientation?
+                    this->constraint->constraintPose = this->global_anchor_as_target_offset;
                 }
                 else
                 {
                     // TODO not sure if this is correct?
-                    this->constraint->constraintPose.pos = tLinkWorldPose.rot.RotateVector(this->global_anchor_as_target_offset);
+                    this->constraint->constraintPose.pos = notGlobalCaseTranslationConstraintVec;
+                    this->constraint->constraintPose.rot = this->global_anchor_as_target_offset.rot;
                 }
             }
         }
@@ -445,7 +455,7 @@ class VirtualConstraint : public ModelPlugin
     double sendSecondsElapsed;
     gazebo::common::Time old_wall_time;
 
-    math::Vector3 global_anchor_as_target_offset;
+    math::Pose global_anchor_as_target_offset;
 
     transport::NodePtr node;
     transport::PublisherPtr factoryPub;
