@@ -73,6 +73,7 @@
 // #include <gazebo/gui/UserCmdHistory.hh>
 // #include <gazebo/gui/ViewAngleWidget.hh>
 
+#include <gazebo/transport/transport.hh>
 #include "ConfigureVirtualElementsDialog.hh"
 
 // #endif
@@ -98,6 +99,9 @@ protected slots:
 
 public:
   gazebo::gui::ConfigureVirtualElementsDialog *ptr;
+  void cb(ConstWorldStatisticsPtr &_msg);
+  gazebo::transport::NodePtr node;
+  gazebo::transport::SubscriberPtr sub;
 
   //     /// \brief Counter used to create unique model names
   //   private:

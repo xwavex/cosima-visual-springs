@@ -39,6 +39,30 @@
 using namespace gazebo;
 using namespace gui;
 
+/* INFO
+
+ this->modelInfoSub = this->node->Subscribe("~/model/info", &Scene::OnModelMsg, this);
+
+this->requestPub = this->node->Advertise<msgs::Request>("~/request");
+this->requestPub->WaitForConnection();
+this->requestMsg = msgs::CreateRequest("scene_info");
+this->requestPub->Publish(*this->requestMsg);
+
+// REQUEST FROM SERVER TO CLIENT -> is model_delete? trigger request to SERVER
+this->requestSub = this->node->Subscribe("~/request", &Scene::OnRequest, this);
+void Scene::OnRequest(ConstRequestPtr &_msg)
+
+// LISTEN to SCNEE INFO RESPONSE
+this->responseSub = this->node->Subscribe("~/response", &Scene::OnResponse, this, true);
+
+
+this->sceneSub = this->node->Subscribe("~/scene", &Scene::OnScene, this);
+ void Scene::OnScene(ConstScenePtr &_msg)
+  bool Scene::ProcessSceneMsg(ConstScenePtr &_msg)
+   bool Scene::ProcessModelMsg(const msgs::Model &_msg)
+
+*/
+
 /////////////////////////////////////////////////
 ConfigureVirtualElementsDialog::ConfigureVirtualElementsDialog(QWidget *_parent)
     : QDialog(_parent), ui(new Ui::ConfigureVirtualElementsDialog)
@@ -60,348 +84,56 @@ ConfigureVirtualElementsDialog::ConfigureVirtualElementsDialog(QWidget *_parent)
     ui->setupUi(this);
     std::cout << "ui setup!!!" << std::endl;
 
-    // this->modelLabel = new QLabel();
+    connectionSetSelectedEntity = gazebo::event::Events::ConnectSetSelectedEntity(std::bind(&ConfigureVirtualElementsDialog::OnSetSelectedEntity, this, std::placeholders::_1, std::placeholders::_2));
 
-    // // Links list
-    // QHBoxLayout *linkLayout = new QHBoxLayout();
-    // QLabel *linkLabel = new QLabel(tr("<b>Apply to link:<b> "));
-    // this->linksComboBox = new QComboBox();
-    // this->linksComboBox->installEventFilter(this);
-    // this->linksComboBox->setMinimumWidth(200);
-    // connect(this->linksComboBox, SIGNAL(currentIndexChanged(QString)),
-    //         this, SLOT(SetLink(QString)));
+    // this->node = gazebo::transport::NodePtr(new gazebo::transport::Node());
+    // this->node->Init("sjsjsjsjsjs");
+    // // // this->requestSub = this->node->Subscribe("~/request", &ConfigureVirtualElementsDialog::OnRequest, this);
+    // this->requestPub = this->node->Advertise<msgs::Request>("~/request");
 
-    // linkLayout->addWidget(linkLabel);
-    // linkLayout->addWidget(this->linksComboBox);
+    // // this->responseSub = this->node->Subscribe("~/response", &ConfigureVirtualElementsDialog::OnResponse, this, true);
 
-    // // Force
-    // QLabel *forceLabel = new QLabel(tr(
-    //     "<font size=4>Force</font>"));
-    // forceLabel->setObjectName("forceLabel");
-    // forceLabel->setStyleSheet(
-    //     "QLabel#forceLabel {\
-    //       background-color: #444;\
-    //       border-radius: 5px;\
-    //       padding-left: 10px;\
-    //       min-height: 40px;\
-    //   }");
-
-    // // Force vector layout
-    // QGridLayout *forceVectorLayout = new QGridLayout();
-
-    // // Force Vector
-    // this->forceXSpin = new QDoubleSpinBox();
-    // this->forceYSpin = new QDoubleSpinBox();
-    // this->forceZSpin = new QDoubleSpinBox();
-
-    // std::vector<QDoubleSpinBox *> forceSpins;
-    // forceSpins.push_back(this->forceXSpin);
-    // forceSpins.push_back(this->forceYSpin);
-    // forceSpins.push_back(this->forceZSpin);
-
-    // for (unsigned int i = 0; i < forceSpins.size(); ++i)
-    // {
-    //     QLabel *forceElementLabel = new QLabel();
-    //     if (i == 0)
-    //         forceElementLabel->setText(tr("X:"));
-    //     else if (i == 1)
-    //         forceElementLabel->setText(tr("Y:"));
-    //     else if (i == 2)
-    //         forceElementLabel->setText(tr("Z:"));
-    //     QLabel *forceUnitLabel = new QLabel(tr("N"));
-
-    //     forceSpins[i]->setRange(-ignition::math::MAX_D, ignition::math::MAX_D);
-    //     forceSpins[i]->setSingleStep(100);
-    //     forceSpins[i]->setDecimals(3);
-    //     forceSpins[i]->setValue(0);
-    //     forceSpins[i]->setMaximumWidth(100);
-    //     forceSpins[i]->installEventFilter(this);
-    //     connect(forceSpins[i], SIGNAL(valueChanged(double)), this,
-    //             SLOT(OnForceChanged(double)));
-
-    //     forceVectorLayout->addWidget(forceElementLabel, i, 0, Qt::AlignRight);
-    //     forceVectorLayout->addWidget(forceSpins[i], i, 1);
-    //     forceVectorLayout->addWidget(forceUnitLabel, i, 2);
-    // }
-
-    // // Force total
-    // QLabel *forceMagLabel = new QLabel(tr("Mag:"));
-    // QLabel *forceMagUnitLabel = new QLabel(tr("N"));
-
-    // this->forceMagSpin = new QDoubleSpinBox();
-    // this->forceMagSpin->setRange(0, ignition::math::MAX_D);
-    // this->forceMagSpin->setSingleStep(100);
-    // this->forceMagSpin->setDecimals(3);
-    // this->forceMagSpin->setValue(0);
-    // this->forceMagSpin->setMaximumWidth(100);
-    // this->forceMagSpin->installEventFilter(this);
-    // connect(this->forceMagSpin, SIGNAL(valueChanged(double)), this,
-    //         SLOT(OnForceMagChanged(double)));
-
-    // forceVectorLayout->addWidget(forceMagLabel, 3, 0, Qt::AlignRight);
-    // forceVectorLayout->addWidget(this->forceMagSpin, 3, 1);
-    // forceVectorLayout->addWidget(forceMagUnitLabel, 3, 2);
-
-    // // Clear force
-    // QPushButton *forceClearButton = new QPushButton(tr("Clear"));
-    // connect(forceClearButton, SIGNAL(clicked()), this, SLOT(OnForceClear()));
-    // forceVectorLayout->addWidget(forceClearButton, 4, 0, 1, 3, Qt::AlignLeft);
-
-    // // Vertical separator
-    // QFrame *separator = new QFrame();
-    // separator->setFrameShape(QFrame::VLine);
-    // separator->setLineWidth(10);
-
-    // // Force Position
-    // QLabel *forcePosLabel = new QLabel(tr("Application Point:"));
-    // forcePosLabel->setObjectName("forcePosLabel");
-    // forcePosLabel->setStyleSheet(
-    //     "QLabel#forcePosLabel {\
-    //       max-height: 15px;\
-    //   }");
-
-    // // CoM
-    // QLabel *comLabel = new QLabel(tr("Center of mass"));
-
-    // QLabel *comPixLabel = new QLabel();
-    // QPixmap comPixmap(":images/com.png");
-    // comPixmap = comPixmap.scaled(QSize(20, 20));
-    // comPixLabel->setPixmap(comPixmap);
-    // comPixLabel->setMask(comPixmap.mask());
-
-    // QHBoxLayout *comLabelLayout = new QHBoxLayout();
-    // comLabelLayout->addWidget(comLabel);
-    // comLabelLayout->addWidget(comPixLabel);
-
-    // this->comRadio = new QRadioButton();
-    // this->forcePosRadio = new QRadioButton();
-    // this->comRadio->setChecked(true);
-    // connect(this->comRadio, SIGNAL(toggled(bool)), this,
-    //         SLOT(ToggleComRadio(bool)));
-
-    // // Force Position layout
-    // QGridLayout *forcePosLayout = new QGridLayout();
-    // forcePosLayout->setContentsMargins(0, 0, 0, 0);
-    // forcePosLayout->addWidget(forcePosLabel, 0, 0, 1, 4, Qt::AlignLeft);
-    // forcePosLayout->addWidget(this->comRadio, 1, 0);
-    // forcePosLayout->addLayout(comLabelLayout, 1, 1, 1, 3, Qt::AlignLeft);
-    // forcePosLayout->addWidget(this->forcePosRadio, 2, 0);
-
-    // // Force Position Vector
-    // this->forcePosXSpin = new QDoubleSpinBox();
-    // this->forcePosYSpin = new QDoubleSpinBox();
-    // this->forcePosZSpin = new QDoubleSpinBox();
-
-    // std::vector<QDoubleSpinBox *> forcePosSpins;
-    // forcePosSpins.push_back(this->forcePosXSpin);
-    // forcePosSpins.push_back(this->forcePosYSpin);
-    // forcePosSpins.push_back(this->forcePosZSpin);
-
-    // for (unsigned int i = 0; i < forcePosSpins.size(); ++i)
-    // {
-    //     QLabel *forcePosElementLabel = new QLabel();
-    //     if (i == 0)
-    //         forcePosElementLabel->setText(tr("X:"));
-    //     else if (i == 1)
-    //         forcePosElementLabel->setText(tr("Y:"));
-    //     else if (i == 2)
-    //         forcePosElementLabel->setText(tr("Z:"));
-    //     QLabel *forcePosUnitLabel = new QLabel(tr("m"));
-
-    //     forcePosSpins[i]->setRange(-ignition::math::MAX_D, ignition::math::MAX_D);
-    //     forcePosSpins[i]->setSingleStep(0.1);
-    //     forcePosSpins[i]->setDecimals(3);
-    //     forcePosSpins[i]->setValue(0);
-    //     forcePosSpins[i]->setMaximumWidth(100);
-    //     forcePosSpins[i]->installEventFilter(this);
-    //     connect(forcePosSpins[i], SIGNAL(valueChanged(double)), this,
-    //             SLOT(OnForcePosChanged(double)));
-
-    //     forcePosLayout->addWidget(forcePosElementLabel, i + 2, 1, Qt::AlignRight);
-    //     forcePosLayout->addWidget(forcePosSpins[i], i + 2, 2);
-    //     forcePosLayout->addWidget(forcePosUnitLabel, i + 2, 3);
-    // }
-
-    // // Apply force
-    // QPushButton *applyForceButton = new QPushButton("Apply Force");
-    // connect(applyForceButton, SIGNAL(clicked()), this, SLOT(OnApplyForce()));
-
-    // // Force layout
-    // QGridLayout *forceLayout = new QGridLayout();
-    // forceLayout->setContentsMargins(0, 0, 0, 0);
-    // forceLayout->addWidget(forceLabel, 0, 0, 1, 5);
-    // forceLayout->addItem(new QSpacerItem(10, 10), 1, 0, 1, 5);
-    // forceLayout->addLayout(forceVectorLayout, 2, 1);
-    // forceLayout->addWidget(separator, 2, 2);
-    // forceLayout->addLayout(forcePosLayout, 2, 3);
-    // forceLayout->addItem(new QSpacerItem(10, 10), 3, 0, 1, 5);
-    // forceLayout->addWidget(applyForceButton, 4, 1, 1, 3, Qt::AlignRight);
-    // forceLayout->addItem(new QSpacerItem(5, 10), 5, 0);
-    // forceLayout->addItem(new QSpacerItem(7, 10), 5, 4);
-
-    // QFrame *forceFrame = new QFrame();
-    // forceFrame->setLayout(forceLayout);
-    // forceFrame->setObjectName("forceLayout");
-    // forceFrame->setFrameShape(QFrame::StyledPanel);
-
-    // forceFrame->setStyleSheet(
-    //     "QFrame#forceLayout {\
-    //       background-color: #666;\
-    //       border-radius: 10px;\
-    //   }");
-
-    // QGraphicsDropShadowEffect *forceEffect = new QGraphicsDropShadowEffect;
-    // forceEffect->setBlurRadius(5);
-    // forceEffect->setXOffset(5);
-    // forceEffect->setYOffset(5);
-    // forceEffect->setColor(Qt::black);
-    // forceFrame->setGraphicsEffect(forceEffect);
-
-    // // Torque
-    // QLabel *torqueLabel = new QLabel(tr("<font size=4>Torque</font>"));
-    // torqueLabel->setObjectName("torqueLabel");
-    // torqueLabel->setStyleSheet(
-    //     "QLabel#torqueLabel {\
-    //       background-color: #444;\
-    //       border-radius: 5px;\
-    //       padding-left: 10px;\
-    //       min-height: 40px;\
-    //   }");
-
-    // // Torque vector layout
-    // QGridLayout *torqueVectorLayout = new QGridLayout();
-
-    // // Torque Vector
-    // this->torqueXSpin = new QDoubleSpinBox();
-    // this->torqueYSpin = new QDoubleSpinBox();
-    // this->torqueZSpin = new QDoubleSpinBox();
-
-    // std::vector<QDoubleSpinBox *> torqueSpins;
-    // torqueSpins.push_back(this->torqueXSpin);
-    // torqueSpins.push_back(this->torqueYSpin);
-    // torqueSpins.push_back(this->torqueZSpin);
-
-    // for (unsigned int i = 0; i < torqueSpins.size(); ++i)
-    // {
-    //     QLabel *torqueElementLabel = new QLabel();
-    //     if (i == 0)
-    //         torqueElementLabel->setText(tr("X:"));
-    //     else if (i == 1)
-    //         torqueElementLabel->setText(tr("Y:"));
-    //     else if (i == 2)
-    //         torqueElementLabel->setText(tr("Z:"));
-    //     QLabel *torqueUnitLabel = new QLabel(tr("Nm"));
-
-    //     torqueSpins[i]->setRange(-ignition::math::MAX_D, ignition::math::MAX_D);
-    //     torqueSpins[i]->setSingleStep(100);
-    //     torqueSpins[i]->setDecimals(3);
-    //     torqueSpins[i]->setValue(0);
-    //     torqueSpins[i]->setMaximumWidth(100);
-    //     torqueSpins[i]->installEventFilter(this);
-    //     connect(torqueSpins[i], SIGNAL(valueChanged(double)), this,
-    //             SLOT(OnTorqueChanged(double)));
-
-    //     torqueVectorLayout->addWidget(torqueElementLabel, i, 0, Qt::AlignRight);
-    //     torqueVectorLayout->addWidget(torqueSpins[i], i, 1);
-    //     torqueVectorLayout->addWidget(torqueUnitLabel, i, 2);
-    // }
-
-    // // Torque magnitude
-    // QLabel *torqueMagLabel = new QLabel(tr("Mag:"));
-    // QLabel *torqueMagUnitLabel = new QLabel(tr("Nm"));
-
-    // this->torqueMagSpin = new QDoubleSpinBox();
-    // this->torqueMagSpin->setRange(0, ignition::math::MAX_D);
-    // this->torqueMagSpin->setSingleStep(100);
-    // this->torqueMagSpin->setDecimals(3);
-    // this->torqueMagSpin->setValue(0);
-    // this->torqueMagSpin->setMaximumWidth(100);
-    // this->torqueMagSpin->installEventFilter(this);
-    // connect(this->torqueMagSpin, SIGNAL(valueChanged(double)), this,
-    //         SLOT(OnTorqueMagChanged(double)));
-
-    // torqueVectorLayout->addWidget(torqueMagLabel, 3, 0, Qt::AlignRight);
-    // torqueVectorLayout->addWidget(this->torqueMagSpin, 3, 1);
-    // torqueVectorLayout->addWidget(torqueMagUnitLabel, 3, 2);
-
-    // // Clear torque
-    // QPushButton *torqueClearButton = new QPushButton(tr("Clear"));
-    // connect(torqueClearButton, SIGNAL(clicked()), this, SLOT(OnTorqueClear()));
-    // torqueVectorLayout->addWidget(torqueClearButton, 4, 0, 1, 3, Qt::AlignLeft);
-
-    // // Apply torque
-    // QPushButton *applyTorqueButton = new QPushButton("Apply Torque");
-    // connect(applyTorqueButton, SIGNAL(clicked()), this, SLOT(OnApplyTorque()));
-
-    // // Torque layout
-    // QGridLayout *torqueLayout = new QGridLayout();
-    // torqueLayout->setContentsMargins(0, 0, 0, 0);
-    // torqueLayout->addWidget(torqueLabel, 0, 0, 1, 3);
-    // torqueLayout->addItem(new QSpacerItem(10, 10), 1, 0, 1, 3);
-    // torqueLayout->addLayout(torqueVectorLayout, 2, 1);
-    // torqueLayout->addItem(new QSpacerItem(10, 10), 3, 0, 1, 3);
-    // torqueLayout->addWidget(applyTorqueButton, 4, 1, 1, 1, Qt::AlignRight);
-    // torqueLayout->addItem(new QSpacerItem(5, 10), 5, 0);
-    // torqueLayout->addItem(new QSpacerItem(5, 10), 5, 2);
-
-    // QFrame *torqueFrame = new QFrame();
-    // torqueFrame->setLayout(torqueLayout);
-    // torqueFrame->setObjectName("torqueLayout");
-    // torqueFrame->setFrameShape(QFrame::StyledPanel);
-
-    // torqueFrame->setStyleSheet(
-    //     "QFrame#torqueLayout {\
-    //       background-color: #666;\
-    //       border-radius: 10px;\
-    //   }");
-
-    // QGraphicsDropShadowEffect *torqueEffect = new QGraphicsDropShadowEffect;
-    // torqueEffect->setBlurRadius(5);
-    // torqueEffect->setXOffset(5);
-    // torqueEffect->setYOffset(5);
-    // torqueEffect->setColor(Qt::black);
-    // torqueFrame->setGraphicsEffect(torqueEffect);
-
-    // // Buttons
-    // QPushButton *cancelButton = new QPushButton(tr("Cancel"));
-    // connect(cancelButton, SIGNAL(clicked()), this, SLOT(OnCancel()));
-
-    // QPushButton *applyAllButton = new QPushButton("Apply All");
-    // applyAllButton->setDefault(true);
-    // connect(applyAllButton, SIGNAL(clicked()), this, SLOT(OnApplyAll()));
-
-    // QHBoxLayout *buttonsLayout = new QHBoxLayout;
-    // buttonsLayout->addWidget(cancelButton);
-    // buttonsLayout->addWidget(applyAllButton);
-
-    // // Main layout
-    // QGridLayout *mainLayout = new QGridLayout();
-    // mainLayout->setSizeConstraint(QLayout::SetFixedSize);
-    // mainLayout->addWidget(this->modelLabel, 0, 0, 1, 2, Qt::AlignLeft);
-    // mainLayout->addLayout(linkLayout, 1, 0, 1, 2, Qt::AlignLeft);
-    // mainLayout->addWidget(forceFrame, 2, 0);
-    // mainLayout->addWidget(torqueFrame, 2, 1);
-    // mainLayout->addLayout(buttonsLayout, 3, 0, 1, 2, Qt::AlignRight);
-
-    // this->setLayout(mainLayout);
-
-    // // Transport
-    // this->node = transport::NodePtr(new transport::Node());
-    // this->node->TryInit(common::Time::Maximum());
-
-    // this->userCmdPub =
-    //     this->node->Advertise<msgs::UserCmd>("~/user_cmd");
-
-    // this->comVector = ignition::math::Vector3d::Zero;
-    // this->forceVector = ignition::math::Vector3d::Zero;
-    // this->torqueVector = ignition::math::Vector3d::Zero;
+    // this->modelInfoSub = this->node->Subscribe("~/model/info", &ConfigureVirtualElementsDialog::OnModelMsg, this);
 }
+
+// void ConfigureVirtualElementsDialog::OnRequest(ConstRequestPtr &_msg)
+// {
+//     // boost::mutex::scoped_lock lock(*this->receiveMutex);
+//     // this->requestMsgs.push_back(_msg);
+// }
+
+// /////////////////////////////////////////////////
+// void ConfigureVirtualElementsDialog::OnModelMsg(ConstModelPtr &_msg)
+// {
+//     // boost::mutex::scoped_lock lock(*this->receiveMutex);
+//     // this->modelMsgs.push_back(_msg);
+//     std::cout << "received" << std::endl;
+//     std::cout << "r " << _msg << std::endl;
+// }
 
 /////////////////////////////////////////////////
 ConfigureVirtualElementsDialog::~ConfigureVirtualElementsDialog()
 {
+    // delete this->requestMsg;
     this->Fini();
 }
+
+// /////////////////////////////////////////////////
+// void ConfigureVirtualElementsDialog::OnResponse(ConstResponsePtr &_msg)
+// {
+//     if (!this->requestMsg || _msg->id() != this->requestMsg->id())
+//     {
+//         std::cout << "received " << _msg << std::endl;
+//         return;
+//     }
+
+//     msgs::Scene sceneMsg;
+//     sceneMsg.ParseFromString(_msg->serialized_data());
+//     std::shared_ptr<msgs::Scene> sm(new msgs::Scene(sceneMsg));
+//     std::cout << sm << std::endl;
+//     // this->sceneMsgs.push_back(sm);
+//     // this->requestMsg = NULL;
+// }
 
 /////////////////////////////////////////////////
 void ConfigureVirtualElementsDialog::Init()
@@ -435,6 +167,7 @@ void ConfigureVirtualElementsDialog::Init()
 /////////////////////////////////////////////////
 void ConfigureVirtualElementsDialog::Fini()
 {
+    gazebo::event::Events::DisconnectSetSelectedEntity(this->connectionSetSelectedEntity);
     if (this->mainWindow)
         this->mainWindow->removeEventFilter(this);
 
@@ -459,6 +192,20 @@ void ConfigureVirtualElementsDialog::Fini()
 
     this->deleteLater();
     delete ui;
+}
+
+void ConfigureVirtualElementsDialog::OnSetSelectedEntity(const std::string &_name, const std::string &_mode)
+{
+    if (this->isVisible())
+    {
+        std::cout << "Selected " << _name << ", " << _mode << std::endl;
+        if (ui->sd_anchor_stacked_link_lineEdit_model->hasFocus())
+        {
+            ui->sd_anchor_stacked_link_lineEdit_model->setText(QString::fromStdString(_name));
+        }
+
+        // ui->sd_anchor_stacked_link_lineEdit_link->setText("");
+    }
 }
 
 // ConfigureVirtualElementsDialog::~ConfigureVirtualElementsDialog()
@@ -493,6 +240,12 @@ void ConfigureVirtualElementsDialog::on_btn_box_main_accepted()
 
 void ConfigureVirtualElementsDialog::on_btn_box_main_clicked(QAbstractButton *button)
 {
+    // // // TODO
+    // // this->requestPub->WaitForConnection();
+    // this->requestMsg = gazebo::msgs::CreateRequest("entity_info"); //entity_info //scene_info
+    // this->requestPub->Publish(*this->requestMsg);
+    // // node.Request("~/request", *this->requestMsg);
+
     if (ui->btn_box_main->button(QDialogButtonBox::Reset) == static_cast<QPushButton *>(button))
     {
         // spring-damper page
@@ -1304,7 +1057,7 @@ void ConfigureVirtualElementsDialog::ActivateWindow()
 {
     if (!this->isActiveWindow())
     {
-        // Clear focus before activating not to trigger FucusIn
+        // Clear focus before activating not to trigger FocusIn
         QWidget *focusedWidget = this->focusWidget();
         if (focusedWidget)
             focusedWidget->clearFocus();

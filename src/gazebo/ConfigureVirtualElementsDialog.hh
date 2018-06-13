@@ -33,7 +33,16 @@
 
 #include <gazebo/gui/qt.h>
 #include <gazebo/rendering/Visual.hh>
-#include <gazebo/transport/TransportTypes.hh>
+// #include <gazebo/transport/TransportTypes.hh>
+// #include <gazebo/transport/transport.hh>
+#include <gazebo/msgs/msgs.hh>
+// VERY important https://blog.csdn.net/h321654/article/details/54582341
+// // Parse error at "BOOST_JOIN" FIX
+// #ifndef Q_MOC_RUN
+// #include <gazebo/transport/Node.hh>
+// #endif
+#include <ignition/msgs.hh>
+#include <ignition/transport.hh>
 
 #include <QDialog>
 #include <QAbstractButton>
@@ -300,6 +309,40 @@ public:
 public:
   QMainWindow *mainWindow;
   // TODO not sure about the Q
+
+public:
+  gazebo::event::ConnectionPtr connectionSetSelectedEntity;
+
+  // public:
+  //   gazebo::transport::SubscriberPtr requestSub;
+
+  //   /// \brief Publish requests
+  // private:
+  // gazebo::transport::PublisherPtr requestPub;
+
+  /// \brief Keep around our request message.
+  // private:
+  //   gazebo::msgs::Request *requestMsg;
+
+  /// \brief Communication Node
+  // private:
+  //   gazebo::transport::NodePtr node;
+  // ignition::transport::Node node;
+
+  //   /// \brief Subscribe to reponses.
+  // private:
+  //   gazebo::transport::SubscriberPtr responseSub;
+
+  // private:
+  // gazebo::transport::SubscriberPtr modelInfoSub;
+
+public:
+  void OnSetSelectedEntity(const std::string &_name, const std::string &_mode);
+  //   void OnModelMsg(ConstModelPtr &_msg);
+
+  // private:
+  //   void OnResponse(ConstResponsePtr &_msg);
+  //   void OnRequest(ConstRequestPtr &_msg);
 };
 /// \}
 } // namespace gui

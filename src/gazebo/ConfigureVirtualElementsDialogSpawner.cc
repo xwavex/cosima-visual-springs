@@ -69,10 +69,23 @@ ConfigureVirtualElementsDialogSpawner::ConfigureVirtualElementsDialogSpawner()
     this->move(10, 10);
     this->resize(200, 40);
 
+    node = gazebo::transport::NodePtr(new gazebo::transport::Node());
+    node->Init();
+    sub = node->Subscribe("~/world_stats", &ConfigureVirtualElementsDialogSpawner::cb, this);
+
+
+
+    //sd
+
     // // Create a node for transportation
     // this->node = transport::NodePtr(new transport::Node());
     // this->node->Init();
     // this->factoryPub = this->node->Advertise<msgs::Factory>("~/factory");
+}
+
+void ConfigureVirtualElementsDialogSpawner::cb(ConstWorldStatisticsPtr &_msg)
+{
+    std::cout << _msg->DebugString();
 }
 
 /////////////////////////////////////////////////
