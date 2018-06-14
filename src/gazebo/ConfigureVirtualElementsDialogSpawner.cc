@@ -17,6 +17,7 @@
 #include <sstream>
 // #include <gazebo/msgs/msgs.hh>
 #include "ConfigureVirtualElementsDialogSpawner.hh"
+#include <gazebo/rendering/rendering.hh>
 
 using namespace gazebo;
 using namespace cosima;
@@ -29,7 +30,6 @@ ConfigureVirtualElementsDialogSpawner::ConfigureVirtualElementsDialogSpawner()
     : GUIPlugin()
 {
     // this->counter = 0;
-
     // Set the frame background and foreground colors
     this->setStyleSheet(
         "QFrame { background-color : rgba(100, 100, 100, 255); color : white; }");
@@ -41,14 +41,15 @@ ConfigureVirtualElementsDialogSpawner::ConfigureVirtualElementsDialogSpawner()
     QFrame *mainFrame = new QFrame();
 
     // TODO perhaps wrong?
-    ptr = new gazebo::gui::ConfigureVirtualElementsDialog(this);
+    ptr = std::shared_ptr<gazebo::gui::ConfigureVirtualElementsDialog>(new gazebo::gui::ConfigureVirtualElementsDialog(this));
 
     // Create the layout that sits inside the frame
     QVBoxLayout *frameLayout = new QVBoxLayout();
 
     // Create a push button, and connect it to the OnButton function
-    QPushButton *button = new QPushButton(tr("CoSiMA Virtual Elements"));
+    button = new QPushButton(tr("CoSiMA Virtual Elements"));
     connect(button, SIGNAL(clicked()), this, SLOT(OnButton()));
+    button->setVisible(false);
 
     // Add the button to the frame's layout
     frameLayout->addWidget(button);
@@ -69,28 +70,85 @@ ConfigureVirtualElementsDialogSpawner::ConfigureVirtualElementsDialogSpawner()
     this->move(10, 10);
     this->resize(200, 40);
 
-    node = gazebo::transport::NodePtr(new gazebo::transport::Node());
-    node->Init();
-    sub = node->Subscribe("~/world_stats", &ConfigureVirtualElementsDialogSpawner::cb, this);
-
-
-
-    //sd
-
-    // // Create a node for transportation
-    // this->node = transport::NodePtr(new transport::Node());
-    // this->node->Init();
-    // this->factoryPub = this->node->Advertise<msgs::Factory>("~/factory");
+    firstPreRenderer = true;
+    this->connectionPreRender = gazebo::event::Events::ConnectPreRender(std::bind(&ConfigureVirtualElementsDialogSpawner::OnPreRender, this));
 }
 
-void ConfigureVirtualElementsDialogSpawner::cb(ConstWorldStatisticsPtr &_msg)
+void ConfigureVirtualElementsDialogSpawner::OnPreRender()
 {
+    if (firstPreRenderer)
+    {
+        this->node = gazebo::transport::NodePtr(new gazebo::transport::Node());
+        this->node->Init();
+        this->requestPub = this->node->Advertise<msgs::Request>("~/request");
+        this->responseSub = this->node->Subscribe("~/response", &ConfigureVirtualElementsDialogSpawner::OnResponse, this, true);
+        firstPreRenderer = false;
+        button->setVisible(true);
+        // disconnect!
+        gazebo::event::Events::DisconnectPreRender(this->connectionPreRender);
+    }
+}
+
+void ConfigureVirtualElementsDialogSpawner::Load(sdf::ElementPtr _elem)
+{
+    std::cout << "Gui PLugin start!" << std::endl;
+}
+
+/////////////////////////////////////////////////
+void ConfigureVirtualElementsDialogSpawner::OnResponse(ConstResponsePtr &_msg)
+{
+    if (!this->requestMsg || _msg->id() != this->requestMsg->id())
+    {
+        return;
+    }
+
+    gazebo::msgs::Scene sceneMsg;
+    if (_msg->has_type() && _msg->type() == sceneMsg.GetTypeName())
+    {
+        sceneMsg.ParseFromString(_msg->serialized_data());
+
+        for (int i = 0; i < sceneMsg.model_size(); i++)
+        {
+            // this->entities[sceneMsg.model(i).name()] = sceneMsg.model(i).id();
+
+            for (int j = 0; j < sceneMsg.model(i).link_size(); j++)
+            {
+                std::cout << sceneMsg.model(i).name() << ", link " << sceneMsg.model(i).link(j).name() << std::endl;
+                // this->entities[sceneMsg.model(i).link(j).name()] =
+                //     sceneMsg.model(i).link(j).id();
+
+                // for (int k = 0; k < sceneMsg.model(i).link(j).collision_size(); ++k)
+                // {
+                //     this->entities[sceneMsg.model(i).link(j).collision(k).name()] =
+                //         sceneMsg.model(i).link(j).collision(k).id();
+                // }
+            }
+            // gui::Events::modelUpdate(sceneMsg.model(i));
+        }
+    }
+    // delete this->requestMsg;
+    // this->requestMsg = NULL;
+}
+
+void ConfigureVirtualElementsDialogSpawner::OnRequest(ConstRequestPtr &_msg)
+{
+    // boost::mutex::scoped_lock lock(*this->receiveMutex);
+    // this->requestMsgs.push_back(_msg);
+}
+
+/////////////////////////////////////////////////
+void ConfigureVirtualElementsDialogSpawner::OnModelMsg(ConstModelPtr &_msg)
+{
+    // boost::mutex::scoped_lock lock(*this->receiveMutex);
+    // this->modelMsgs.push_back(_msg);
     std::cout << _msg->DebugString();
 }
 
 /////////////////////////////////////////////////
 ConfigureVirtualElementsDialogSpawner::~ConfigureVirtualElementsDialogSpawner()
 {
+    delete this->requestMsg;
+    delete this->button;
 }
 
 ///////////////////////////////////////////////
@@ -113,5 +171,11 @@ void ConfigureVirtualElementsDialogSpawner::OnButton()
     // msg.set_sdf(newModelStr.str());
     // this->factoryPub->Publish(msg);
     std::cout << "Clickeddd!" << std::endl;
+
+    // TODO
+    this->requestPub->WaitForConnection();
+    this->requestMsg = gazebo::msgs::CreateRequest("scene_info");
+    this->requestPub->Publish(*this->requestMsg);
+
     ptr->Init();
 }

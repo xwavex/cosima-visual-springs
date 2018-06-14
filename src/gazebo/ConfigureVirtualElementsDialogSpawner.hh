@@ -73,7 +73,11 @@
 // #include <gazebo/gui/UserCmdHistory.hh>
 // #include <gazebo/gui/ViewAngleWidget.hh>
 
+// Parse error at "BOOST_JOIN" FIX https : //blog.csdn.net/h321654/article/details/54582341
+#ifndef Q_MOC_RUN
 #include <gazebo/transport/transport.hh>
+#endif
+
 #include "ConfigureVirtualElementsDialog.hh"
 
 // #endif
@@ -93,13 +97,16 @@ public:
 public:
   virtual ~ConfigureVirtualElementsDialogSpawner();
 
+  /// \brief Load function
+public:
+  void Load(sdf::ElementPtr _elem);
+
   /// \brief Callback trigged when the button is pressed.
 protected slots:
   void OnButton();
 
 public:
-  gazebo::gui::ConfigureVirtualElementsDialog *ptr;
-  void cb(ConstWorldStatisticsPtr &_msg);
+  std::shared_ptr<gazebo::gui::ConfigureVirtualElementsDialog> ptr;
   gazebo::transport::NodePtr node;
   gazebo::transport::SubscriberPtr sub;
 
@@ -114,6 +121,38 @@ public:
   //     /// \brief Publisher of factory messages.
   //   private:
   //     transport::PublisherPtr factoryPub;
+
+  //////////////////////////////////////////////////////
+private:
+  QPushButton *button;
+  /// \brief Keep around our request message.
+private:
+  gazebo::msgs::Request *requestMsg;
+
+  /// \brief Publish requests
+private:
+  gazebo::transport::PublisherPtr requestPub;
+
+  void OnModelMsg(ConstModelPtr &_msg);
+
+private:
+  void OnResponse(ConstResponsePtr &_msg);
+  void OnRequest(ConstRequestPtr &_msg);
+
+  /// \brief Subscribe to reponses.
+private:
+  gazebo::transport::SubscriberPtr responseSub;
+
+private:
+  gazebo::transport::SubscriberPtr modelInfoSub;
+
+  /// \brief Hack Load somehow not called so prerenderer hast to take care in its first iteration!
+private:
+  gazebo::event::ConnectionPtr connectionPreRender;
+
+private:
+  void OnPreRender();
+  bool firstPreRenderer;
 };
 } // namespace cosima
 #endif

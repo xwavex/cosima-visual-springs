@@ -85,15 +85,6 @@ ConfigureVirtualElementsDialog::ConfigureVirtualElementsDialog(QWidget *_parent)
     std::cout << "ui setup!!!" << std::endl;
 
     connectionSetSelectedEntity = gazebo::event::Events::ConnectSetSelectedEntity(std::bind(&ConfigureVirtualElementsDialog::OnSetSelectedEntity, this, std::placeholders::_1, std::placeholders::_2));
-
-    // this->node = gazebo::transport::NodePtr(new gazebo::transport::Node());
-    // this->node->Init("sjsjsjsjsjs");
-    // // // this->requestSub = this->node->Subscribe("~/request", &ConfigureVirtualElementsDialog::OnRequest, this);
-    // this->requestPub = this->node->Advertise<msgs::Request>("~/request");
-
-    // // this->responseSub = this->node->Subscribe("~/response", &ConfigureVirtualElementsDialog::OnResponse, this, true);
-
-    // this->modelInfoSub = this->node->Subscribe("~/model/info", &ConfigureVirtualElementsDialog::OnModelMsg, this);
 }
 
 // void ConfigureVirtualElementsDialog::OnRequest(ConstRequestPtr &_msg)
@@ -114,7 +105,6 @@ ConfigureVirtualElementsDialog::ConfigureVirtualElementsDialog(QWidget *_parent)
 /////////////////////////////////////////////////
 ConfigureVirtualElementsDialog::~ConfigureVirtualElementsDialog()
 {
-    // delete this->requestMsg;
     this->Fini();
 }
 
@@ -240,12 +230,6 @@ void ConfigureVirtualElementsDialog::on_btn_box_main_accepted()
 
 void ConfigureVirtualElementsDialog::on_btn_box_main_clicked(QAbstractButton *button)
 {
-    // // // TODO
-    // // this->requestPub->WaitForConnection();
-    // this->requestMsg = gazebo::msgs::CreateRequest("entity_info"); //entity_info //scene_info
-    // this->requestPub->Publish(*this->requestMsg);
-    // // node.Request("~/request", *this->requestMsg);
-
     if (ui->btn_box_main->button(QDialogButtonBox::Reset) == static_cast<QPushButton *>(button))
     {
         // spring-damper page

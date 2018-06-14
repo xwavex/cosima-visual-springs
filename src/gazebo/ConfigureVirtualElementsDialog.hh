@@ -41,8 +41,6 @@
 // #ifndef Q_MOC_RUN
 // #include <gazebo/transport/Node.hh>
 // #endif
-#include <ignition/msgs.hh>
-#include <ignition/transport.hh>
 
 #include <QDialog>
 #include <QAbstractButton>
@@ -313,36 +311,8 @@ public:
 public:
   gazebo::event::ConnectionPtr connectionSetSelectedEntity;
 
-  // public:
-  //   gazebo::transport::SubscriberPtr requestSub;
-
-  //   /// \brief Publish requests
-  // private:
-  // gazebo::transport::PublisherPtr requestPub;
-
-  /// \brief Keep around our request message.
-  // private:
-  //   gazebo::msgs::Request *requestMsg;
-
-  /// \brief Communication Node
-  // private:
-  //   gazebo::transport::NodePtr node;
-  // ignition::transport::Node node;
-
-  //   /// \brief Subscribe to reponses.
-  // private:
-  //   gazebo::transport::SubscriberPtr responseSub;
-
-  // private:
-  // gazebo::transport::SubscriberPtr modelInfoSub;
-
 public:
   void OnSetSelectedEntity(const std::string &_name, const std::string &_mode);
-  //   void OnModelMsg(ConstModelPtr &_msg);
-
-  // private:
-  //   void OnResponse(ConstResponsePtr &_msg);
-  //   void OnRequest(ConstRequestPtr &_msg);
 };
 /// \}
 } // namespace gui
