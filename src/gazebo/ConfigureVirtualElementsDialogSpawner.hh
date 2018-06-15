@@ -76,15 +76,17 @@
 // Parse error at "BOOST_JOIN" FIX https : //blog.csdn.net/h321654/article/details/54582341
 #ifndef Q_MOC_RUN
 #include <gazebo/transport/transport.hh>
+#include <gazebo/gui/GuiIface.hh>
 #endif
 
+#include "ConfigureVirtualElementsDialogSpawnerPrivate.hh"
 #include "ConfigureVirtualElementsDialog.hh"
 
 // #endif
 using namespace gazebo;
 namespace cosima
 {
-class ConfigureVirtualElementsDialogSpawner : public GUIPlugin
+class ConfigureVirtualElementsDialogSpawner : public GUIPlugin, public ConfigureVirtualElementsDialogSpawnerPrivate
 {
   Q_OBJECT
 
@@ -106,7 +108,7 @@ protected slots:
   void OnButton();
 
 public:
-  std::shared_ptr<gazebo::gui::ConfigureVirtualElementsDialog> ptr;
+  std::shared_ptr<cosima::ConfigureVirtualElementsDialog> ptr;
   gazebo::transport::NodePtr node;
   gazebo::transport::SubscriberPtr sub;
 
@@ -151,8 +153,14 @@ private:
   gazebo::event::ConnectionPtr connectionPreRender;
 
 private:
+  gazebo::rendering::UserCameraPtr activeCamera;
+
+private:
   void OnPreRender();
   bool firstPreRenderer;
+
+public:
+  void triggerSceneInfoRequest();
 };
 } // namespace cosima
 #endif

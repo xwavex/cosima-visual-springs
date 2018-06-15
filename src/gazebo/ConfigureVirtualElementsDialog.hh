@@ -36,11 +36,11 @@
 // #include <gazebo/transport/TransportTypes.hh>
 // #include <gazebo/transport/transport.hh>
 #include <gazebo/msgs/msgs.hh>
-// VERY important https://blog.csdn.net/h321654/article/details/54582341
-// // Parse error at "BOOST_JOIN" FIX
-// #ifndef Q_MOC_RUN
-// #include <gazebo/transport/Node.hh>
-// #endif
+// Parse error at "BOOST_JOIN" FIX https : //blog.csdn.net/h321654/article/details/54582341
+#ifndef Q_MOC_RUN
+#include <gazebo/transport/transport.hh>
+#include <gazebo/gui/GuiIface.hh>
+#endif
 
 #include <QDialog>
 #include <QAbstractButton>
@@ -48,10 +48,11 @@
 #include <QMainWindow>
 
 #include "ui_configurevirtualelementsdialog.h"
+#include "ConfigureVirtualElementsDialogSpawnerPrivate.hh"
 
-namespace gazebo
-{
-namespace gui
+using namespace gazebo;
+// {
+namespace cosima
 {
 /// \addtogroup gazebo_gui
 /// \{
@@ -78,8 +79,8 @@ class ConfigureVirtualElementsDialog : public QDialog
   /// \brief Constructor.
   /// \param[in] _parent Parent QWidget.
 public:
-  explicit ConfigureVirtualElementsDialog(QWidget *_parent = 0);
-
+  ConfigureVirtualElementsDialog(QWidget *_parent, ConfigureVirtualElementsDialogSpawnerPrivate *_ref);
+  //explicit
   /// \brief Destructor.
 public:
   ~ConfigureVirtualElementsDialog();
@@ -313,9 +314,26 @@ public:
 
 public:
   void OnSetSelectedEntity(const std::string &_name, const std::string &_mode);
+
+private:
+  rendering::VisualPtr hoveredVisual;
+  float hoveredVisualTrans;
+  rendering::VisualPtr clickedVisualGlobal;
+
+private:
+  cosima::ConfigureVirtualElementsDialogSpawnerPrivate *ref;
+
+public:
+  void triggerSceneInfoRequest();
+
+private:
+  bool clickInitiated;
+
+  // protected:
+  //   bool eventFilter(QObject *obj, QEvent *event);
 };
 /// \}
-} // namespace gui
-} // namespace gazebo
+} // namespace cosima
+// } // namespace gazebo
 
 #endif

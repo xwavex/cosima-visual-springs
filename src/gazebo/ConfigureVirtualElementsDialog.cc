@@ -35,9 +35,13 @@
 #include "ConfigureVirtualElementsDialog.hh"
 
 #include <iostream>
+#include <QEvent>
+#include <QKeyEvent>
+#include <QMouseEvent>
 
 using namespace gazebo;
 using namespace gui;
+using namespace cosima;
 
 /* INFO
 
@@ -64,7 +68,7 @@ this->sceneSub = this->node->Subscribe("~/scene", &Scene::OnScene, this);
 */
 
 /////////////////////////////////////////////////
-ConfigureVirtualElementsDialog::ConfigureVirtualElementsDialog(QWidget *_parent)
+ConfigureVirtualElementsDialog::ConfigureVirtualElementsDialog(QWidget *_parent, ConfigureVirtualElementsDialogSpawnerPrivate *_ref)
     : QDialog(_parent), ui(new Ui::ConfigureVirtualElementsDialog)
 {
     this->setObjectName("ConfigureVirtualElementsDialog");
@@ -79,12 +83,19 @@ ConfigureVirtualElementsDialog::ConfigureVirtualElementsDialog(QWidget *_parent)
           border-radius: 5px;\
           border-radius: 5px;\
       }");
-
-    std::cout << "loaded!!!" << std::endl;
     ui->setupUi(this);
-    std::cout << "ui setup!!!" << std::endl;
-
-    connectionSetSelectedEntity = gazebo::event::Events::ConnectSetSelectedEntity(std::bind(&ConfigureVirtualElementsDialog::OnSetSelectedEntity, this, std::placeholders::_1, std::placeholders::_2));
+    hoveredVisualTrans = 0;
+    clickedVisualGlobal = NULL;
+    ref = _ref;
+    clickInitiated = false;
+    if (ui->sd_anchor_stacked_link_lineEdit_model && ui->sd_anchor_stacked_link_lineEdit_link && ui->sd_target_groupBox_lineEdit_model && ui->sd_target_groupBox_lineEdit_link)
+    {
+        ui->sd_anchor_stacked_link_lineEdit_model->installEventFilter(this);
+        ui->sd_anchor_stacked_link_lineEdit_link->installEventFilter(this);
+        ui->sd_target_groupBox_lineEdit_model->installEventFilter(this);
+        ui->sd_target_groupBox_lineEdit_link->installEventFilter(this);
+    }
+    // connectionSetSelectedEntity = gazebo::event::Events::ConnectSetSelectedEntity(std::bind(&ConfigureVirtualElementsDialog::OnSetSelectedEntity, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 // void ConfigureVirtualElementsDialog::OnRequest(ConstRequestPtr &_msg)
@@ -767,32 +778,34 @@ void ConfigureVirtualElementsDialog::OnPreRender()
 /////////////////////////////////////////////////
 bool ConfigureVirtualElementsDialog::OnMousePress(const common::MouseEvent &_event)
 {
-    // rendering::UserCameraPtr userCamera = gui::get_active_camera();
-    // if (!userCamera || !this->applyWrenchVisual)
-    //     return false;
+    if (hoveredVisual)
+    {
+        hoveredVisual->SetTransparency(hoveredVisualTrans);
+        hoveredVisual = NULL;
+    }
 
-    // this->draggingTool = false;
+    if (!clickInitiated)
+    {
+        return false;
+    }
 
-    // rendering::VisualPtr vis = userCamera->Visual(_event.Pos(),
-    //                                               this->manipState);
-
-    // if (vis)
-    //     return false;
-
-    // // If on top of a circle handle
-    // if (this->manipState == "rot_z" ||
-    //     this->manipState == "rot_y")
-    // {
-    //     this->draggingTool = true;
-
-    //     // Highlight dragged circle
-    //     this->applyWrenchVisual->GetRotTool()->SetState(
-    //         this->manipState);
-
-    //     // Register rotTool pose at drag start
-    //     this->dragStartPose =
-    //         this->applyWrenchVisual->GetRotTool()->WorldPose();
-    // }
+    // get current visual
+    rendering::UserCameraPtr userCamera = gui::get_active_camera();
+    if (!userCamera)
+    {
+        return false;
+    }
+    gazebo::rendering::VisualPtr clickedVisual = userCamera->GetVisual(_event.Pos());
+    if (clickedVisual && ref)
+    {
+        // Trigger scene request:
+        std::cout << "am i here?" << std::endl;
+        //clickInitiated = true;
+        clickedVisualGlobal = clickedVisual;
+        clickInitiated = false;
+        ref->triggerSceneInfoRequest();
+        return true;
+    }
     return false;
 }
 
@@ -840,9 +853,33 @@ bool ConfigureVirtualElementsDialog::OnMouseRelease(const common::MouseEvent &_e
 /////////////////////////////////////////////////
 bool ConfigureVirtualElementsDialog::OnMouseMove(const common::MouseEvent &_event)
 {
-    // rendering::UserCameraPtr userCamera = gui::get_active_camera();
-    // if (!userCamera || !this->applyWrenchVisual)
-    //     return false;
+    if (!clickInitiated)
+    {
+        return false;
+    }
+
+    rendering::UserCameraPtr userCamera = gui::get_active_camera();
+    if (!userCamera)
+        return false;
+
+    gazebo::rendering::VisualPtr newVisual = userCamera->GetVisual(_event.Pos());
+    if (hoveredVisual)
+    {
+        if (hoveredVisual != newVisual)
+        {
+            hoveredVisual->SetTransparency(hoveredVisualTrans);
+        }
+        else
+        {
+            return true;
+        }
+    }
+    if (newVisual)
+    {
+        hoveredVisual = newVisual;
+        hoveredVisualTrans = hoveredVisual->GetTransparency();
+        hoveredVisual->SetTransparency(0.7);
+    }
 
     // // Must make a Qt check as well because Gazebo event is not working with test
     // bool isDragging = _event.Dragging() ||
@@ -995,39 +1032,39 @@ void ConfigureVirtualElementsDialog::SetActive(bool _active)
     //     this->Fini();
     //     return;
     // }
-    // if (_active)
-    // {
-    //     // Set visible
-    //     this->applyWrenchVisual->SetMode(
-    //         static_cast<rendering::ApplyWrenchVisual::Mode>(this->GetMode()));
+    if (_active)
+    {
+        // // Set visible
+        // this->applyWrenchVisual->SetMode(
+        //     static_cast<rendering::ApplyWrenchVisual::Mode>(this->GetMode()));
 
-    //     // Set selected
-    //     event::Events::setSelectedEntity(this->linkName, "normal");
+        // // Set selected
+        // event::Events::setSelectedEntity(this->linkName, "normal");
 
-    //     // Set arrow mode
-    //     if (g_arrowAct)
-    //         g_arrowAct->trigger();
+        // // Set arrow mode
+        // if (g_arrowAct)
+        //     g_arrowAct->trigger();
 
-    //     MouseEventHandler::Instance()->AddPressFilter(
-    //         "dialog_" + this->applyWrenchVisual->Name(),
-    //         std::bind(&ConfigureVirtualElementsDialog::OnMousePress, this,
-    //                   std::placeholders::_1));
+        MouseEventHandler::Instance()->AddPressFilter(
+            "dialog_clickConfigureVirtualElementsDialog",
+            std::bind(&ConfigureVirtualElementsDialog::OnMousePress, this,
+                      std::placeholders::_1));
 
-    //     MouseEventHandler::Instance()->AddMoveFilter(
-    //         "dialog_" + this->applyWrenchVisual->Name(),
-    //         std::bind(&ConfigureVirtualElementsDialog::OnMouseMove, this,
-    //                   std::placeholders::_1));
-    // }
-    // else
-    // {
-    //     this->applyWrenchVisual->SetMode(
-    //         rendering::ApplyWrenchVisual::Mode::NONE);
+        MouseEventHandler::Instance()->AddMoveFilter(
+            "dialog_moveConfigureVirtualElementsDialog",
+            std::bind(&ConfigureVirtualElementsDialog::OnMouseMove, this,
+                      std::placeholders::_1));
+    }
+    else
+    {
+        // this->applyWrenchVisual->SetMode(
+        //     rendering::ApplyWrenchVisual::Mode::NONE);
 
-    //     MouseEventHandler::Instance()->RemovePressFilter(
-    //         "dialog_" + this->applyWrenchVisual->Name());
-    //     MouseEventHandler::Instance()->RemoveMoveFilter(
-    //         "dialog_" + this->applyWrenchVisual->Name());
-    // }
+        MouseEventHandler::Instance()->RemovePressFilter(
+            "dialog_clickConfigureVirtualElementsDialog");
+        MouseEventHandler::Instance()->RemoveMoveFilter(
+            "dialog_moveConfigureVirtualElementsDialog");
+    }
 }
 
 // /////////////////////////////////////////////////
@@ -1053,6 +1090,33 @@ void ConfigureVirtualElementsDialog::ActivateWindow()
 /////////////////////////////////////////////////
 bool ConfigureVirtualElementsDialog::eventFilter(QObject *_object, QEvent *_event)
 {
+    if (_event->type() == QEvent::KeyPress)
+    {
+        // QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+        // std::cout << "Ate key press " << keyEvent->key() << std::endl;
+
+        // TODO if ESC -> clickInitiated = false;
+        return true;
+    }
+    else if (_event->type() == QEvent::MouseButtonPress)
+    {
+        if (_object == ui->sd_anchor_stacked_link_lineEdit_model || _object == ui->sd_anchor_stacked_link_lineEdit_link)
+        {
+            // TODO trigger selection
+            clickInitiated = true;
+        }
+        else if (_object == ui->sd_target_groupBox_lineEdit_model || _object == ui->sd_target_groupBox_lineEdit_link)
+        {
+            // tODO trigger selection
+            clickInitiated = true;
+            // TODO merken wer die Anfrage gestellt hat?!
+        }
+    }
+    else
+    {
+        // standard event processing
+        return QObject::eventFilter(_object, _event);
+    }
     // // Attach rotation tool to focused mode
     // if (_event->type() == QEvent::FocusIn)
     // {
@@ -1117,6 +1181,22 @@ void ConfigureVirtualElementsDialog::changeEvent(QEvent *_event)
             mainWindowActive = false;
         }
 
-        this->SetActive(this->isActiveWindow() || mainWindowActive);
+        if (this->isActiveWindow() || mainWindowActive)
+        {
+            this->SetActive(true);
+        }
+        else
+        {
+            if (hoveredVisual)
+            {
+                hoveredVisual->SetTransparency(hoveredVisualTrans);
+                hoveredVisual = NULL;
+            }
+
+            if (!clickInitiated)
+            {
+                this->SetActive(false);
+            }
+        }
     }
 }

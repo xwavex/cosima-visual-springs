@@ -18,12 +18,13 @@
 // #include <gazebo/msgs/msgs.hh>
 #include "ConfigureVirtualElementsDialogSpawner.hh"
 #include <gazebo/rendering/rendering.hh>
+#include <gazebo/rendering/Visual.hh>
 
 using namespace gazebo;
 using namespace cosima;
 
 // Register this plugin with the simulator
-GZ_REGISTER_GUI_PLUGIN(cosima::ConfigureVirtualElementsDialogSpawner)
+GZ_REGISTER_GUI_PLUGIN(ConfigureVirtualElementsDialogSpawner)
 
 /////////////////////////////////////////////////
 ConfigureVirtualElementsDialogSpawner::ConfigureVirtualElementsDialogSpawner()
@@ -41,7 +42,7 @@ ConfigureVirtualElementsDialogSpawner::ConfigureVirtualElementsDialogSpawner()
     QFrame *mainFrame = new QFrame();
 
     // TODO perhaps wrong?
-    ptr = std::shared_ptr<gazebo::gui::ConfigureVirtualElementsDialog>(new gazebo::gui::ConfigureVirtualElementsDialog(this));
+    ptr = std::shared_ptr<ConfigureVirtualElementsDialog>(new ConfigureVirtualElementsDialog(this, this));
 
     // Create the layout that sits inside the frame
     QVBoxLayout *frameLayout = new QVBoxLayout();
@@ -86,6 +87,8 @@ void ConfigureVirtualElementsDialogSpawner::OnPreRender()
         button->setVisible(true);
         // disconnect!
         gazebo::event::Events::DisconnectPreRender(this->connectionPreRender);
+
+        activeCamera = gazebo::gui::get_active_camera();
     }
 }
 
@@ -130,6 +133,14 @@ void ConfigureVirtualElementsDialogSpawner::OnResponse(ConstResponsePtr &_msg)
     // this->requestMsg = NULL;
 }
 
+void ConfigureVirtualElementsDialogSpawner::triggerSceneInfoRequest()
+{
+    std::cout << "Retrieve info!" << std::endl;
+    this->requestPub->WaitForConnection();
+    this->requestMsg = gazebo::msgs::CreateRequest("scene_info");
+    this->requestPub->Publish(*this->requestMsg);
+}
+
 void ConfigureVirtualElementsDialogSpawner::OnRequest(ConstRequestPtr &_msg)
 {
     // boost::mutex::scoped_lock lock(*this->receiveMutex);
@@ -170,12 +181,5 @@ void ConfigureVirtualElementsDialogSpawner::OnButton()
     // msgs::Factory msg;
     // msg.set_sdf(newModelStr.str());
     // this->factoryPub->Publish(msg);
-    std::cout << "Clickeddd!" << std::endl;
-
-    // TODO
-    this->requestPub->WaitForConnection();
-    this->requestMsg = gazebo::msgs::CreateRequest("scene_info");
-    this->requestPub->Publish(*this->requestMsg);
-
     ptr->Init();
 }
