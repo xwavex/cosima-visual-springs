@@ -90,6 +90,10 @@ add_dependencies(cosima_gazebo_virtual_constraint_visual virtual_elements_msgs)
 add_library(cosima_virtual_elements_dialog SHARED ${headers_MOC} src/gazebo/ConfigureVirtualElementsDialogSpawner.cc src/gazebo/ConfigureVirtualElementsDialog.cc)
 target_link_libraries(cosima_virtual_elements_dialog ${GAZEBO_LIBRARIES} ${QT_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5X11Extras_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES} ${PROTOBUF_LIBRARIES})
 
+add_library(cosima_gazebo_virtual_rubber_band SHARED src/gazebo/virtual_rubber_band.cc)
+target_link_libraries(cosima_gazebo_virtual_rubber_band ${GAZEBO_LIBRARIES})
+# add_dependencies(cosima_gazebo_virtual_rubber_band virtual_elements_msgs)
+
 # add_library(virtual_spring_visual_sp SHARED src/gazebo/virtual_spring_visual_sp.cc)
 # target_link_libraries(virtual_spring_visual_sp ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
 
