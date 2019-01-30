@@ -143,13 +143,13 @@ public:
     {
       if (world->GetModelCount() >= 2)
       {
-        physics::ModelPtr s0 = world->GetModel("spring0");
-        physics::ModelPtr s1 = world->GetModel("spring1");
+        physics::ModelPtr s0 = world->GetModel("kuka-lwr");
+        physics::ModelPtr s1 = world->GetModel("boxA");
         if (s0 && s1)
         {
           // std::cout << "s0 and s1 added" << std::endl;
 
-          ls0 = s0->GetLink("link");
+          ls0 = s0->GetLink("left/bhand_palm_link");
           ls1 = s1->GetLink("link");
 
           if (ls0 && ls1)
@@ -183,8 +183,8 @@ public:
                         </visual>\
                       </link>\
                       <plugin name='virtual_spring' filename='libcosima_gazebo_virtual_spring.so'>\
-                          <anchor model='spring0' link='link' />\
-                          <target model='spring1' link='link' />\
+                          <target model='kuka-lwr' link='left/bhand_palm_link' />\
+                          <anchor model='boxA' link='link' />\
                           <stiffness>5.5 5.5 5.5</stiffness>\
                           <damping>0 0 0</damping>\
                           <stiffness_orient>0.0 0.0 0.0</stiffness_orient>\
@@ -279,7 +279,7 @@ public:
             // TODO take care of unique names!
             model5->GetAttribute("name")->SetFromString("constraintGhostFixedGlobal");
             model5->GetElement("link")->GetElement("visual")->GetAttribute("name")->SetFromString("constraintGhostFixedGlobal");
-            world->InsertModelSDF(sphereSDF5);
+            // world->InsertModelSDF(sphereSDF5);
 
             std::cout << "inserted constraint model with plugin" << std::endl;
 

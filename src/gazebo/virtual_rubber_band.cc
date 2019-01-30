@@ -53,6 +53,7 @@ class VirtualRubberBand : public ModelPlugin
     ~VirtualRubberBand()
     {
         event::Events::DisconnectWorldUpdateBegin(this->update_connection);
+        event::Events::DisconnectWorldUpdateBegin(this->after_connection);
         // this->factoryPub.reset();
         // if (this->node)
         //     this->node->Fini();
@@ -78,9 +79,31 @@ class VirtualRubberBand : public ModelPlugin
 
         // Listen to the update event. This event is broadcast every simulation iteration.
         this->update_connection = event::Events::ConnectWorldUpdateBegin(boost::bind(&VirtualRubberBand::OnUpdate, this, _1));
-        // this->after_connection = event::Events::ConnectWorldUpdateEnd(std::bind(&VirtualRubberBand::OnUpdateEnd, this));
+        this->after_connection = event::Events::ConnectWorldUpdateEnd(std::bind(&VirtualRubberBand::OnUpdateEnd, this));
         // std::cout
         //     << "Plugin Pubs to /gazebo/" << this->model->GetName() << "::link::" << this->model->GetName() << "/constraint" << std::endl;
+    }
+
+    void OnUpdateEnd()
+    {
+        gazebo::physics::Joint_V jointList = this->model->GetJoints();
+        for (uint i = 0; i < jointList.size(); i++)
+        {
+
+            gazebo::physics::JointPtr tmp = jointList[i];
+            // gzwarn << "check " << i << ", " << tmp->GetType() << std::endl;
+            if (tmp->GetType() == 1088)
+            {
+                gazebo::math::Angle ang = tmp->GetAngle(0);
+                double rad = ang.Radian();
+                // gzwarn << "joint " << i << ", rad " << rad << ", f " << tmp->GetForceTorque(0).body1Force << ", v " << tmp->GetVelocity(0) << std::endl;
+
+                // double kp = 0.7;
+                // double kd = 0.1;
+
+                // tmp->SetForce(0, kp * (-rad) + kd * -tmp->GetVelocity(0));
+            }
+        }
     }
 
     // Called by the world update start event
@@ -92,21 +115,21 @@ class VirtualRubberBand : public ModelPlugin
         // }
 
         // TODO do get links only once!
-        gazebo::physics::Joint_V jointList = this->model->GetJoints();
-        for (uint i = 0; i < jointList.size(); i++)
-        {
+        // gazebo::physics::Joint_V jointList = this->model->GetJoints();
+        // for (uint i = 0; i < jointList.size(); i++)
+        // {
 
-            gazebo::physics::JointPtr tmp = jointList[i];
-            // gzwarn << "check " << i << ", " << tmp->GetType() << std::endl;
-            if (tmp->GetType() == 1088)
-            {
-                gazebo::math::Angle ang = tmp->GetAngle(0);
-                double rad = ang.Radian();
-                // gzwarn << "rad " << i << ", " << rad << std::endl;
+        //     gazebo::physics::JointPtr tmp = jointList[i];
+        //     // gzwarn << "check " << i << ", " << tmp->GetType() << std::endl;
+        //     if (tmp->GetType() == 1088)
+        //     {
+        //         gazebo::math::Angle ang = tmp->GetAngle(0);
+        //         double rad = ang.Radian();
+        //         // gzwarn << "rad " << i << ", " << rad << std::endl;
 
-                tmp->SetForce(0,-0.5);
-            }
-        }
+        //         tmp->SetForce(0, -0.5);
+        //     }
+        // }
 
         // // retrieve anchor
         // retrieveAnchorWrtType(this->anchor_type);
@@ -126,7 +149,7 @@ class VirtualRubberBand : public ModelPlugin
 
   private:
     // Pointer to the update event connection
-    event::ConnectionPtr update_connection;
+    event::ConnectionPtr update_connection, after_connection;
 
     physics::ModelPtr model;
     physics::LinkPtr link;
