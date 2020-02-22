@@ -52,10 +52,10 @@ using namespace gazebo;
 namespace cosima
 {
 
-class VirtualConstraintVisual : public VisualPlugin
+class VirtualComplianceVisual : public VisualPlugin
 {
   public:
-    ~VirtualConstraintVisual()
+    ~VirtualComplianceVisual()
     {
         event::Events::DisconnectPreRender(this->updateConnection);
         this->infoSub.reset();
@@ -69,13 +69,13 @@ class VirtualConstraintVisual : public VisualPlugin
 
         if (!_visual || !_sdf)
         {
-            gzerr << "[VirtualConstraintVisual] No visual or SDF element specified. Plugin won't load." << std::endl;
+            gzerr << "[VirtualComplianceVisual] No visual or SDF element specified. Plugin won't load." << std::endl;
             return;
         }
         this->visual = _visual;
         this->visual->SetVisible(true);
 
-        globalMaterialName = "Constraint/global";
+        globalMaterialName = "Compliance/global";
 
         this->lineLength = 0.4;
         this->crossFactor = 0.2;
@@ -119,20 +119,20 @@ class VirtualConstraintVisual : public VisualPlugin
         this->circle->setVisible(false);
 
         // Connect to the world update signal
-        this->updateConnection = event::Events::ConnectPreRender(std::bind(&VirtualConstraintVisual::Update, this));
+        this->updateConnection = event::Events::ConnectPreRender(std::bind(&VirtualComplianceVisual::Update, this));
 
         this->node = transport::NodePtr(new transport::Node());
         this->node->Init();
 
         // FOR SINGLE SUBS!
-        this->infoSub = this->node->Subscribe("/gazebo/" + this->visual->GetName() + "/constraint", &VirtualConstraintVisual::OnInfo, this);
+        this->infoSub = this->node->Subscribe("/gazebo/" + this->visual->GetName() + "/compliance", &VirtualComplianceVisual::OnInfo, this);
 
         globalMaterial = Ogre::MaterialManager::getSingleton().getByName(globalMaterialName);
         if (globalMaterial.isNull())
         {
             globalMaterial = Ogre::MaterialManager::getSingleton().create(globalMaterialName, Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
-            globalMaterial->setAmbient(0.94, 0.27, 0.38);
-            globalMaterial->setDiffuse(0.94, 0.27, 0.38, 1);
+            globalMaterial->setAmbient(0.27, 0.94, 0.38);
+            globalMaterial->setDiffuse(0.27, 0.94, 0.38, 1);
             globalMaterial->setSpecular(0.1, 0.1, 0.1, 1);
         }
         this->line->setMaterial(globalMaterialName);
@@ -158,7 +158,7 @@ class VirtualConstraintVisual : public VisualPlugin
         // }
 
         gzdbg
-            << "[VirtualConstraintVisual] " << this->visual->GetName() << " subscribed to " << this->infoSub->GetTopic() << " and is successfully loaded!" << std::endl;
+            << "[VirtualComplianceVisual] " << this->visual->GetName() << " subscribed to " << this->infoSub->GetTopic() << " and is successfully loaded!" << std::endl;
     }
 
   private:
@@ -166,13 +166,13 @@ class VirtualConstraintVisual : public VisualPlugin
     {
         if (!this->visual || !this->visual_draw)
         {
-            gzerr << "[VirtualConstraintVisual] The visual is null." << std::endl;
+            gzerr << "[VirtualComplianceVisual] The visual is null." << std::endl;
             return;
         }
 
         if (!this->line)
         {
-            gzerr << "[VirtualConstraintVisual] The line to draw is null." << std::endl;
+            gzerr << "[VirtualComplianceVisual] The line to draw is null." << std::endl;
             return;
         }
 
@@ -194,7 +194,7 @@ class VirtualConstraintVisual : public VisualPlugin
         }
         else
         {
-            color = common::Color(0.94, 0.27, 0.38, 1.0);
+            color = common::Color(0.27, 0.94, 0.38, 1.0);
             this->line->setMaterial(globalMaterialName);
             this->circle->setMaterialName(0, globalMaterialName);
         }
@@ -203,11 +203,11 @@ class VirtualConstraintVisual : public VisualPlugin
         line->AddPoint(lineLength, 0, 0, color);
         // cross
         double crossLength = lineLength * crossFactor;
-        line->AddPoint(lineLength, crossLength, crossLength, color);
-        line->AddPoint(lineLength, -crossLength, -crossLength, color);
-        line->AddPoint(lineLength, 0, 0, color);
-        line->AddPoint(lineLength, crossLength, -crossLength, color);
-        line->AddPoint(lineLength, -crossLength, crossLength, color);
+        // line->AddPoint(lineLength, crossLength, crossLength, color);
+        // line->AddPoint(lineLength, -crossLength, -crossLength, color);
+        // line->AddPoint(lineLength, 0, 0, color);
+        // line->AddPoint(lineLength, crossLength, -crossLength, color);
+        // line->AddPoint(lineLength, -crossLength, crossLength, color);
 
         math::Vector3 vec(1, 0, 0);
         math::Vector3 finalVec = this->visual_draw->GetWorldPose().rot.RotateVector(vec);
@@ -215,12 +215,12 @@ class VirtualConstraintVisual : public VisualPlugin
         // inWorldFrameText->SetColor(color);
         // inWorldFrameTextSceneNode->setPosition(0, 0, 0);
 
-        // create orienation constraint visual
+        // create orienation compliance visual
         if (firstReceived)
         {
-            if (receivedConstraintPose != math::Pose::Zero)
+            if (receivedCompliancePose != math::Pose::Zero)
             {
-                math::Vector3 help = this->visual_draw->GetWorldPose().rot.RotateVector(receivedConstraintPose.rot.GetAsEuler());
+                math::Vector3 help = this->visual_draw->GetWorldPose().rot.RotateVector(receivedCompliancePose.rot.GetAsEuler());
                 help = help.Normalize() * lineLength;
                 auto eye = ignition::math::Vector3d(help.x, help.y, help.z);
                 auto target = ignition::math::Vector3d(help.x * 1.1, help.y * 1.1, help.z * 1.1);
@@ -253,13 +253,13 @@ class VirtualConstraintVisual : public VisualPlugin
             firstReceived = true;
         }
         in_world_frame = _msg->in_world_frame();
-        receivedConstraintPose.pos.x = _msg->anchor().position().x();
-        receivedConstraintPose.pos.y = _msg->anchor().position().y();
-        receivedConstraintPose.pos.z = _msg->anchor().position().z();
-        receivedConstraintPose.rot.w = _msg->anchor().orientation().w();
-        receivedConstraintPose.rot.x = _msg->anchor().orientation().x();
-        receivedConstraintPose.rot.y = _msg->anchor().orientation().y();
-        receivedConstraintPose.rot.z = _msg->anchor().orientation().z();
+        receivedCompliancePose.pos.x = _msg->anchor().position().x();
+        receivedCompliancePose.pos.y = _msg->anchor().position().y();
+        receivedCompliancePose.pos.z = _msg->anchor().position().z();
+        receivedCompliancePose.rot.w = _msg->anchor().orientation().w();
+        receivedCompliancePose.rot.x = _msg->anchor().orientation().x();
+        receivedCompliancePose.rot.y = _msg->anchor().orientation().y();
+        receivedCompliancePose.rot.z = _msg->anchor().orientation().z();
     }
 
     /// \brief Visual whose color will be changed.
@@ -296,16 +296,16 @@ class VirtualConstraintVisual : public VisualPlugin
     /// \brief Node used for communication.
     std::mutex mutex;
 
-    /// \brief Subscriber to constraint msg.
+    /// \brief Subscriber to compliance msg.
     transport::SubscriberPtr infoSub;
 
     /// \brief Triangle line.
     rendering::DynamicLines *line;
 
-    /// \brief Check if constraint msg was received.
+    /// \brief Check if compliance msg was received.
     bool firstReceived;
 
-    /// \brief Check if constraint is in world frame.
+    /// \brief Check if compliance is in world frame.
     bool in_world_frame;
 
     /// \brief Custom Ogre Material.
@@ -321,10 +321,10 @@ class VirtualConstraintVisual : public VisualPlugin
     std::string localMaterialName;
 
     /// \brief Custom Ogre Material name.
-    math::Pose receivedConstraintPose;
+    math::Pose receivedCompliancePose;
 };
 
 // Register this plugin with the client
-GZ_REGISTER_VISUAL_PLUGIN(VirtualConstraintVisual)
+GZ_REGISTER_VISUAL_PLUGIN(VirtualComplianceVisual)
 
 } // namespace cosima

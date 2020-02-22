@@ -87,6 +87,14 @@ add_library(cosima_gazebo_virtual_constraint_visual SHARED src/gazebo/virtual_co
 target_link_libraries(cosima_gazebo_virtual_constraint_visual virtual_elements_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
 add_dependencies(cosima_gazebo_virtual_constraint_visual virtual_elements_msgs)
 
+add_library(cosima_gazebo_virtual_compliance SHARED src/gazebo/virtual_compliance.cc)
+target_link_libraries(cosima_gazebo_virtual_compliance virtual_elements_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+add_dependencies(cosima_gazebo_virtual_compliance virtual_elements_msgs)
+
+add_library(cosima_gazebo_virtual_compliance_visual SHARED src/gazebo/virtual_compliance_visual.cc)
+target_link_libraries(cosima_gazebo_virtual_compliance_visual virtual_elements_msgs ${GAZEBO_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES})
+add_dependencies(cosima_gazebo_virtual_compliance_visual virtual_elements_msgs)
+
 add_library(cosima_virtual_elements_dialog SHARED ${headers_MOC} src/gazebo/ConfigureVirtualElementsDialogSpawner.cc src/gazebo/ConfigureVirtualElementsDialog.cc)
 target_link_libraries(cosima_virtual_elements_dialog ${GAZEBO_LIBRARIES} ${QT_LIBRARIES} ${Qt5Core_LIBRARIES} ${Qt5Widgets_LIBRARIES} ${Qt5X11Extras_LIBRARIES} ${IGNITION-TRANSPORT_LIBRARIES} ${PROTOBUF_LIBRARIES})
 

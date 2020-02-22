@@ -99,41 +99,41 @@ class VirtualSpringVisual : public VisualPlugin
         line_damper->setVisibilityFlags(GZ_VISIBILITY_GUI);
         line_damper->setVisible(false);
 
-        stiffnessText = new rendering::MovableText();
-        stiffnessText->Load(this->visual_draw->GetName() + "__STIFFNESS_TEXT__", "Stiffness", "Arial", 0.03);
-        stiffnessText->SetShowOnTop(true);
+        // stiffnessText = new rendering::MovableText();
+        // stiffnessText->Load(this->visual_draw->GetName() + "__STIFFNESS_TEXT__", "Stiffness", "Arial", 0.03);
+        // stiffnessText->SetShowOnTop(true);
         // stiffnessText->MovableObject::getUserObjectBindings().setUserAny(
         //     Ogre::Any(std::string(this->visual_draw->GetName())));
-        stiffnessTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__STIFFNESS_TEXT_NODE__");
-        stiffnessTextSceneNode->attachObject(stiffnessText);
-        stiffnessTextSceneNode->setInheritScale(false);
+        // stiffnessTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__STIFFNESS_TEXT_NODE__");
+        // stiffnessTextSceneNode->attachObject(stiffnessText);
+        // stiffnessTextSceneNode->setInheritScale(false);
 
-        dampingText = new rendering::MovableText();
-        dampingText->Load(this->visual_draw->GetName() + "__damping_TEXT__", "Damping", "Arial", 0.03);
-        dampingText->SetShowOnTop(true);
+        // dampingText = new rendering::MovableText();
+        // dampingText->Load(this->visual_draw->GetName() + "__damping_TEXT__", "Damping", "Arial", 0.03);
+        // dampingText->SetShowOnTop(true);
         // dampingText->MovableObject::getUserObjectBindings().setUserAny(
         //     Ogre::Any(std::string(this->visual_draw->GetName())));
-        dampingTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__damping_TEXT_NODE__");
-        dampingTextSceneNode->attachObject(dampingText);
-        dampingTextSceneNode->setInheritScale(false);
+        // dampingTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__damping_TEXT_NODE__");
+        // dampingTextSceneNode->attachObject(dampingText);
+        // dampingTextSceneNode->setInheritScale(false);
 
-        stiffness_orientText = new rendering::MovableText();
-        stiffness_orientText->Load(this->visual_draw->GetName() + "__stiffness_orient_TEXT__", "stiffness_orient", "Arial", 0.03);
-        stiffness_orientText->SetShowOnTop(true);
+        // stiffness_orientText = new rendering::MovableText();
+        // stiffness_orientText->Load(this->visual_draw->GetName() + "__stiffness_orient_TEXT__", "stiffness_orient", "Arial", 0.03);
+        // stiffness_orientText->SetShowOnTop(true);
         // stiffness_orientText->MovableObject::getUserObjectBindings().setUserAny(
         //     Ogre::Any(std::string(this->visual_draw->GetName())));
-        stiffness_orientTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__stiffness_orient_TEXT_NODE__");
-        stiffness_orientTextSceneNode->attachObject(stiffness_orientText);
-        stiffness_orientTextSceneNode->setInheritScale(false);
+        // stiffness_orientTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__stiffness_orient_TEXT_NODE__");
+        // stiffness_orientTextSceneNode->attachObject(stiffness_orientText);
+        // stiffness_orientTextSceneNode->setInheritScale(false);
 
-        damping_orientText = new rendering::MovableText();
-        damping_orientText->Load(this->visual_draw->GetName() + "__damping_orient_TEXT__", "damping_orient", "Arial", 0.03);
-        damping_orientText->SetShowOnTop(true);
+        // damping_orientText = new rendering::MovableText();
+        // damping_orientText->Load(this->visual_draw->GetName() + "__damping_orient_TEXT__", "damping_orient", "Arial", 0.03);
+        // damping_orientText->SetShowOnTop(true);
         // damping_orientText->MovableObject::getUserObjectBindings().setUserAny(
         //     Ogre::Any(std::string(this->visual_draw->GetName())));
-        damping_orientTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__damping_orient_TEXT_NODE__");
-        damping_orientTextSceneNode->attachObject(damping_orientText);
-        damping_orientTextSceneNode->setInheritScale(false);
+        // damping_orientTextSceneNode = this->visual_draw->GetSceneNode()->createChildSceneNode(this->visual_draw->GetName() + "__damping_orient_TEXT_NODE__");
+        // damping_orientTextSceneNode->attachObject(damping_orientText);
+        // damping_orientTextSceneNode->setInheritScale(false);
 
         // reference visual
         referenceFrameVis = gazebo::rendering::LinkFrameVisualPtr(new gazebo::rendering::LinkFrameVisual("_LINK_FRAME_VISUAL_", this->visual_draw));
@@ -376,20 +376,20 @@ class VirtualSpringVisual : public VisualPlugin
 
         math::Vector3 middleVec = target + (anchor - target) * 0.5;
         // set stiffness
-        stiffnessText->SetText("Stiff.L.: " + std::to_string(stiffness.x) + ", " + std::to_string(stiffness.y) + ", " + std::to_string(stiffness.z));
-        stiffnessTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.1);
+        // stiffnessText->SetText("Stiff.L.: " + std::to_string(stiffness.x) + ", " + std::to_string(stiffness.y) + ", " + std::to_string(stiffness.z));
+        // stiffnessTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.1);
 
         // set damping
-        dampingText->SetText("Damp.L.: " + std::to_string(damping.x) + ", " + std::to_string(damping.y) + ", " + std::to_string(damping.z));
-        dampingTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.13);
+        // dampingText->SetText("Damp.L.: " + std::to_string(damping.x) + ", " + std::to_string(damping.y) + ", " + std::to_string(damping.z));
+        // dampingTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.13);
 
         // set stiffness_orient
-        stiffness_orientText->SetText("Stiff.A.: " + std::to_string(stiffness_orient.x) + ", " + std::to_string(stiffness_orient.y) + ", " + std::to_string(stiffness_orient.z));
-        stiffness_orientTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.16);
+        // stiffness_orientText->SetText("Stiff.A.: " + std::to_string(stiffness_orient.x) + ", " + std::to_string(stiffness_orient.y) + ", " + std::to_string(stiffness_orient.z));
+        // stiffness_orientTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.16);
 
         // set damping_orient
-        damping_orientText->SetText("Damp.A.: " + std::to_string(damping_orient.x) + ", " + std::to_string(damping_orient.y) + ", " + std::to_string(damping_orient.z));
-        damping_orientTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.19);
+        // damping_orientText->SetText("Damp.A.: " + std::to_string(damping_orient.x) + ", " + std::to_string(damping_orient.y) + ", " + std::to_string(damping_orient.z));
+        // damping_orientTextSceneNode->setPosition(middleVec.x, middleVec.y, middleVec.z - 0.19);
 
         if (!referenceFrameVis->GetVisible())
         {
